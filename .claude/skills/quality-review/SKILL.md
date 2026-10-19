@@ -45,17 +45,17 @@ cd infra/terraform && terraform plan -input=false -out tfplan   # 要 aws sso lo
 
 ## 観点チェックリスト
 
-### バックエンド(Spring Boot / JPA / Security)
+### バックエンド(Spring Boot / MyBatis / Security・JWT)
 
 - 入力検証: DTO に Bean Validation(`@NotBlank` `@Size` 等)があり、Controller の `@RequestBody` に `@Valid` がある。手書きの検証を Service に重ねていない。
 - エラー応答: `@RestControllerAdvice`(ProblemDetail)で統一。404 は `ResourceNotFoundException`。Service が `boolean` / `Optional` で「見つからない」を返していない。
 - HTTP: 作成は 201 + `Location`。ステータスの使い分け(400/401/403/404/409)が一貫している。Controller はクラス単位の `@RequestMapping`。
-- トランザクション: Service は `@Transactional(readOnly = true)` を基本とし、更新メソッドだけ `@Transactional`。`spring.jpa.open-in-view=false` で、遅延ロードは Service 内で完結。
-- JPA: N+1 がない(集計は GROUP BY、関連は EntityGraph / fetch join)。LIKE のワイルドカードをエスケープ。エンティティを API で直接返さない(DTO を使う)。
+- トランザクション: Service は `@Transactional(readOnly = true)` を基本とし、更新メソッドだけ `@Transactional`。
+- MyBatis: SQL は Mapper に集約し、値は `#{}` でバインドする(`${}` で文字列連結しない。やむを得ない動的な列名・並び順はホワイトリスト)。N+1 がない(集計は GROUP BY / JOIN)。LIKE のワイルドカードをエスケープ。エンティティを API で直接返さない(DTO を使う)。大文字小文字を区別しない比較は `lower()` の式インデックスと条件が一致している。
 - 競合・制約: 一意制約違反が 500 にならず 409 になる。上限チェック(列10個など)の競合を意識している。
-- セキュリティ: 公開パスが最小(`/api/auth/register`・`login`・`health`、静的ファイル)。actuator は health のみ。セッション Cookie(http-only / same-site)、CSRF、パスワードをログ・`toString` に出さない。
+- セキュリティ: 公開パスが最小(`/api/auth/register`・`login`・`health`、静的ファイル)。actuator は health のみ。JWT: 署名鍵(`JWT_SECRET`)が環境変数で渡され 32 バイト以上を検証している・期限(`exp`)と署名を検証している・ログイン失敗でIDの有無を区別しない。パスワード・トークン・署名鍵をログ・`toString` に出さない。
 - 設定: DB パスワード等は環境変数で上書き可能。`show-sql` など開発用設定は `dev` プロファイルのみ。
-- テスト: 正常系だけでなく、境界値(文字数上限)・他人のデータ(404)・未ログイン(401)・CSRF(403)を確認している。
+- テスト: 正常系だけでなく、境界値(文字数上限)・他人のデータ(404)・未ログイン(401)・不正/期限切れトークン(401)を確認している。
 
 ### フロントエンド(React / TypeScript / Vite)
 
@@ -63,7 +63,7 @@ cd infra/terraform && terraform plan -input=false -out tfplan   # 要 aws sso lo
 - Hooks: `useEffect` の依存配列が正しい。親の再描画のたびに listener を付け替えない(`useCallback` / ref)。
 - エラー処理: ユーザーに URL・ステータスコード等の内部情報を見せない。401 はログイン画面へ戻す(共通処理)。通信失敗を「未ログイン」と混同しない。
 - アクセシビリティ: モーダルはネイティブ `<dialog>`(フォーカストラップ・Esc)。入力エラーに `role="alert"` と `aria-invalid` / `aria-describedby`。色だけで情報を伝えない。
-- CSRF: 更新系リクエストに `X-XSRF-TOKEN` を付けている。
+- 認証: API 呼び出しに `Authorization: Bearer` を付けている。トークンの保管先が XSS 対策と整合している。401(期限切れ含む)でトークンを破棄してログイン画面へ戻す。
 - 型: `any` / 不要な `!` を使わない。API の型は `types.ts` に集約。
 
 ### インフラ(Terraform / AWS / 運用スクリプト)
@@ -100,19 +100,19 @@ cd infra/terraform && terraform plan -input=false -out tfplan   # 要 aws sso lo
 
 ### docs ⇔ 実装の差異(docs を正とする)
 
-`docs/requirements.md`・`use-cases.md`・`diagrams.md`・`screen-design.html` と実装を突き合わせる。
+`docs/01-requirements.md`・`02-features.md`・`features/F-*.md`・`03-screens.md`・`04-er-diagram.md` と実装を突き合わせる。
 
-- 画面の文言(ボタン・見出し・ヒント・必須表示)、表示形式(日付 `YYYY/MM/DD`、優先度は「重・中・低」)。
-- 入力制限(ユーザー名1〜50、パスワード8〜72、列名1〜20、列数10、タイトル1〜50、説明500、ラベル名1〜20)と、エラー表示の仕様。
-- 画面項目・操作(確認用パスワード、削除確認ダイアログ、作成日時の表示 等)。
+- 画面の文言(ボタン・見出し・ヒント・必須表示)、表示形式。
+- 入力制限(ユーザーID 3〜15 文字の `[A-Za-z0-9_]`・大文字小文字を区別しない、表示名 1〜30、パスワード 8〜72 文字かつ 72 バイト以内 など、各機能定義書の検証欄)と、エラー表示の仕様。
+- 画面項目・操作(確認用パスワード、削除確認ダイアログ 等)。
 - API(パス・フィールド・ステータスコード・クエリパラメータ)と DB 定義(型・長さ・制約・値の大文字小文字)。
-- docs 同士の整合(参照している要件定義書のバージョン、ER 図とテーブル定義)。
-- 新機能を入れたら docs(要件・ユースケース・ER図・画面設計・README)を同じ PR で更新する。
+- docs 同士の整合(ER 図とテーブル定義、機能一覧と機能定義書)。
+- 新機能を入れたら docs(要件・機能定義・ER図・画面設計・README)を同じ PR で更新する。
 
-**インフラの docs(`docs/aws-deploy-guide.md`)** と、`infra/terraform/`・`scripts/` を突き合わせる。
+**インフラの docs(`docs/05-infrastructure.md`)** と、`infra/terraform/`・`scripts/` を突き合わせる。
 
 - 構成図・部品の表・ファイル構成の表が、実際の `.tf` / `templates/` と一致している(増減したファイルが載っている)。
 - 段階の表(状態)、費用の目安、環境変数の表、手順(コマンド・スクリプト名・引数)が実装と一致している。
 - トラブルシュートに、実際に起きた失敗(原因と対処)を追記している。
 - 設計方針(RDS のスナップショット等)が、コードとガイドで食い違っていない。
-- `README.md`・`docs/diagrams.md` に AWS 構成の記述があれば、同じ内容に更新する。
+- `README.md` に AWS 構成の記述があれば、同じ内容に更新する。

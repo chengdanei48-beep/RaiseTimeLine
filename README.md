@@ -38,10 +38,10 @@ X(旧Twitter)のような、テキスト中心のタイムライン型 SNS で�
 
 | 区分 | 技術 | バージョン |
 |---|---|---|
-| バックエンド | Java / Spring Boot(Web MVC・Data JPA・Security・Actuator) | JDK 25 / Spring Boot 4.1.1 |
+| バックエンド | Java / Spring Boot(Web MVC・MyBatis・Security・Actuator) | JDK 25 / Spring Boot 4.1.1 |
 | ビルド | Maven(Maven Wrapper) | 3.9.16 |
 | データベース | PostgreSQL(開発は Docker、AWS では RDS)/ マイグレーションは Flyway。検索に `pg_trgm` を使用 | 17 |
-| 認証 | Spring Security(セッション方式)+ BCrypt、CSRF は Cookie + `X-XSRF-TOKEN` | Spring Boot 管理バージョン |
+| 認証 | Spring Security(JWT / `Authorization: Bearer`)+ BCrypt。Cookie を使わないため CSRF は無効 | Spring Boot 管理バージョン |
 | フロントエンド | React / TypeScript / Vite / React Router | React 19.3.0 / TypeScript 7.0.2 / Vite 8.3.2 / React Router 7.18.4 |
 | Lint(フロントエンド) | Oxlint | 1.86.0 |
 | 静的解析(バックエンド) | Spotless・Checkstyle・SpotBugs | 2.46.1 / 10.26.1 / 4.9.8 |
@@ -54,7 +54,7 @@ X(旧Twitter)のような、テキスト中心のタイムライン型 SNS で�
 
 ## ディレクトリ構成
 
-現在は `docs/` と開発ルールのみです。実装時は TaskManagement と同じ構成にします(下記の `backend/` `frontend/` は予定)。
+現在は `docs/`・開発ルール・`backend/`(認証 API のみ実装済み)です。`frontend/` などは予定です。
 
 ```
 RaiseTimeLine/
@@ -67,10 +67,24 @@ RaiseTimeLine/
 │  └─ 05-infrastructure.md    … AWS 構成図
 ├─ .claude/                   … Claude Code の設定とスキル(quality-review)
 ├─ CLAUDE.md                  … 開発ルール(Claude Code 向け)
-├─ backend/ (予定)            … バックエンド(Spring Boot)
+├─ backend/                   … バックエンド(Spring Boot + MyBatis)
+├─ docker-compose.yml         … 開発用 PostgreSQL(raisetimeline-postgres、ポート 5433)
+├─ .env.example               … 環境変数の雛形(.env にコピーして使う。.env は git 管理外)
 ├─ frontend/ (予定)           … フロントエンド(React + Vite)
 └─ infra/terraform/ (予定)    … AWS 構築コード(構築すると決めた場合)
 ```
+
+## バックエンドの起動(開発)
+
+```powershell
+Copy-Item .env.example .env        # DB_PASSWORD と JWT_SECRET(32 バイト以上)を設定する
+docker compose up -d               # PostgreSQL(5433)
+cd backend
+./mvnw spring-boot:run             # http://localhost:8080(ヘルスチェック: /api/health)
+./mvnw verify                      # テスト + Spotless + Checkstyle + SpotBugs(PostgreSQL の起動が必要)
+```
+
+アプリは起動時にリポジトリ直下の `.env` を読みます(OS の環境変数が優先)。
 
 ## ドキュメント
 
@@ -150,7 +164,7 @@ cd frontend && npm run build     # 型チェック + ビルド
 
 ## API
 
-すべて JSON。`/api/auth/register`・`/api/auth/login`・`/api/health` 以外は、ログイン(セッション)が必要です。更新系のリクエストには `X-XSRF-TOKEN` ヘッダが必要です。
+すべて JSON。`/api/auth/register`・`/api/auth/login`・`/api/health` 以外は、ログインして得たアクセストークンを `Authorization: Bearer <token>` ヘッダで送る必要があります。
 
 | メソッド | パス | 内容 |
 |---|---|---|
@@ -173,7 +187,7 @@ cd frontend && npm run build     # 型チェック + ビルド
 | GET | `/api/users/{id}/following` `/followers` | フォロー中 / フォロワー一覧 |
 | GET | `/api/health` | ヘルスチェック(ALB が使用) |
 
-エラーは HTTP ステータス(400 入力誤り / 401 未ログイン・認証失敗 / 403 CSRF・権限なし / 404 対象なし / 409 ユーザーIDの重複)と、`detail` を含む JSON(ProblemDetail)で返します。詳細は要件定義書 7章、各 API の入出力は機能定義書を参照してください。
+エラーは HTTP ステータス(400 入力誤り / 401 未ログイン・認証失敗 / 403 権限なし / 404 対象なし / 409 ユーザーIDの重複)と、`detail` を含む JSON(ProblemDetail)で返します。詳細は要件定義書 7章、各 API の入出力は機能定義書を参照してください。
 
 ## インフラ(AWS)
 
@@ -186,7 +200,7 @@ cd frontend && npm run build     # 型チェック + ビルド
 
 - ALB で HTTPS を終端するには、独自ドメインと ACM 証明書が必要です(未定)。
 - ALB は常時課金です(全体で月 $60 前後の目安)。使わない間は消す運用を想定します。
-- EC2 を複数台にする場合は、ログイン状態(セッション)の共有対策が必要です。
+- EC2 を複数台にする場合は、JWT の署名鍵(`JWT_SECRET`)を全台で共有します。
 
 ## 開発の進め方
 

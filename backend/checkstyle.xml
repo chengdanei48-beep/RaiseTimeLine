@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC
+    "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+    "https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!-- 書式は Spotless(google-java-format)に任せ、ここでは書式以外の基本的な誤りを検出する。 -->
+<module name="Checker">
+  <property name="severity" value="warning"/>
+  <property name="charset" value="UTF-8"/>
+
+  <module name="FileTabCharacter"/>
+  <module name="NewlineAtEndOfFile"/>
+
+  <module name="TreeWalker">
+    <module name="AvoidStarImport"/>
+    <module name="UnusedImports"/>
+    <module name="RedundantImport"/>
+    <module name="PackageName"/>
+    <module name="TypeName"/>
+    <module name="MethodName">
+      <!-- テストメソッド名に日本語を使えるようにする -->
+      <property name="format" value="^[a-z\p{L}][\p{L}a-zA-Z0-9_]*$"/>
+    </module>
+    <module name="MemberName"/>
+    <module name="ParameterName"/>
+    <module name="LocalVariableName"/>
+    <module name="ConstantName"/>
+    <module name="NeedBraces"/>
+    <module name="EmptyStatement"/>
+    <module name="EqualsHashCode"/>
+    <module name="MissingSwitchDefault"/>
+    <module name="ModifierOrder"/>
+    <module name="RedundantModifier"/>
+    <module name="OneStatementPerLine"/>
+    <module name="UpperEll"/>
+    <module name="SimplifyBooleanExpression"/>
+    <module name="SimplifyBooleanReturn"/>
+    <module name="StringLiteralEquality"/>
+    <module name="IllegalCatch">
+      <property name="illegalClassNames" value="Throwable, Error"/>
+    </module>
+  </module>
+</module>
