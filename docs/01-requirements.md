@@ -80,7 +80,7 @@ docs/
 
 ### 3.2 アプリ(実装時)
 TaskManagement と同じ構成を想定する。
-- `backend/` … Spring Boot(controller / service / repository / entity / dto / security / exception)。テーブルは Flyway で管理
+- `backend/` … Spring Boot(controller / service / repository(MyBatis の Mapper)/ entity / dto / security / exception)。テーブルは Flyway で管理
 - `frontend/` … React(pages / components / api)。ビルド成果物は backend の静的リソースに同梱し、実行プロセスを 1 つ(jar)にまとめる
 - `infra/terraform/` … AWS 構築コード(構築を行うと決めた時点で作成)
 
@@ -148,8 +148,8 @@ TaskManagement と同じ構成を想定する。
 
 | 区分 | 要件 |
 |---|---|
-| セキュリティ | パスワードは BCrypt でハッシュ化。HTTPS 前提(AWS では ALB で終端)。CSRF 対策(更新系リクエストに `X-XSRF-TOKEN`)、XSS 対策(出力のエスケープ)、認可チェック(他人の投稿・コメントは削除不可、他人のプロフィールは編集不可)。権限のない操作は 403、存在しない・削除済みの対象は 404 |
-| 認証方式 | ユーザーID+パスワード。Spring Security のセッション方式(TaskManagement と同じ)。ID・パスワードを忘れた場合の復旧手段は用意しない |
+| セキュリティ | パスワードは BCrypt でハッシュ化。HTTPS 前提(AWS では ALB で終端)。トークンは `Authorization` ヘッダで送り Cookie を使わないため、CSRF 対策は不要、XSS 対策(出力のエスケープ)、認可チェック(他人の投稿・コメントは削除不可、他人のプロフィールは編集不可)。権限のない操作は 403、存在しない・削除済みの対象は 404 |
+| 認証方式 | ユーザーID+パスワード。JWT(アクセストークンを `Authorization: Bearer` ヘッダで送るステートレス方式。有効期間 24 時間、リフレッシュトークンなし)。TaskManagement のセッション方式からの意図的な変更。ID・パスワードを忘れた場合の復旧手段は用意しない |
 | 性能 | 一覧は 20 件ずつ取得(カーソル方式)。学習規模(ユーザー数十人・投稿数千件)で、一覧の表示が 1 秒以内を目標とする |
 | 整合性 | いいね・フォローの重複登録は DB の複合主キーで防止。冪等な API とする |
 | 画像保存 | AWS S3(非公開バケット)。署名付き URL でアップロード・表示。DB にはオブジェクトキーのみ保存 |
@@ -164,9 +164,9 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 |---|---|---|---|
 | バックエンド(言語) | Java(JDK) | 25(LTS) | |
 | バックエンド(FW) | Spring Boot | 4.1.1 | ビルドは Maven(Maven Wrapper 3.9.16) |
-| データベースアクセス | Spring Data JPA(Hibernate) | Spring Boot 管理バージョン | PostgreSQL 用 JDBC ドライバ |
+| データベースアクセス | MyBatis(mybatis-spring-boot-starter) | 4.1.0 | PostgreSQL 用 JDBC ドライバ。SQL は Mapper に記述する(JPA は使わない) |
 | データベース | PostgreSQL | 17(開発: Docker `postgres:17-alpine` / AWS: RDS) | テーブル定義は Flyway。検索用に `pg_trgm` 拡張を使用 |
-| 認証 | Spring Security(セッション方式)+ BCrypt | Spring Boot 管理バージョン | CSRF は Cookie + `X-XSRF-TOKEN` ヘッダ |
+| 認証 | Spring Security(OAuth2 Resource Server による JWT 検証、HS256)+ BCrypt | Spring Boot 管理バージョン | 署名鍵は環境変数 `JWT_SECRET`。CSRF は無効(Cookie を使わない) |
 | フロントエンド(言語) | TypeScript | 7.0.2 | |
 | フロントエンド(UI) | React / React DOM | 19.3.0 | Next.js は使用しない |
 | フロントエンド(ビルド) | Vite(+ `@vitejs/plugin-react`) | 8.3.2(+ 6.1.1) | 開発サーバーは 5173 番固定 |
@@ -188,6 +188,8 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 | 公開範囲 | PC 内のみ | インターネット(AWS)を想定 | 複数ユーザーが使う SNS のため |
 | ロードバランサー | 使わない(費用) | ALB を使う前提 | 利用者の指定。常時課金が発生する(05 参照) |
 | 画像 | なし | S3 | 画像投稿機能のため |
+| 認証方式 | セッション(Cookie)+ CSRF | **JWT**(`Authorization: Bearer`) | 状態をサーバーに持たず、EC2 の複数台化でセッション共有が不要になる。ログアウトのサーバー側失効はしない(F-AUTH 6章) |
+| データベースアクセス | Spring Data JPA | **MyBatis** | SQL を明示的に書いて学ぶため(`lower(username)` 検索や集計など) |
 
 ---
 
@@ -197,7 +199,7 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 テーブル定義・ER 図は [04-er-diagram.md](04-er-diagram.md) を正とする。テーブルは `users` / `posts` / `post_images` / `comments` / `likes` / `follows` の 6 つ。
 
 ### 7.2 API 一覧
-画面とバックエンドは JSON の REST API で通信する。`/api/auth/register`・`/api/auth/login`・`/api/health` 以外は、ログイン(セッション)が必要。詳細は各機能定義書を参照。
+画面とバックエンドは JSON の REST API で通信する。`/api/auth/register`・`/api/auth/login`・`/api/health` 以外は、ログイン(`Authorization: Bearer` ヘッダのアクセストークン)が必要。詳細は各機能定義書を参照。
 
 | メソッド | パス | 内容 | 成功時 | 機能 |
 |---|---|---|---|---|
@@ -231,8 +233,8 @@ HTTP ステータスと `detail`(メッセージ)を含む JSON(RFC 9457 の Pro
 | ステータス | 意味 |
 |---|---|
 | 400 | 入力内容の誤り(必須未入力・文字数超過・画像の形式/サイズ不正・自分自身のフォローなど) |
-| 401 | 未ログイン、またはユーザーID・パスワードの誤り |
-| 403 | CSRF トークンがない・不正。または権限なし(他人の投稿の削除など) |
+| 401 | 未ログイン(トークンなし・署名不正・期限切れ)、またはユーザーID・パスワードの誤り |
+| 403 | 権限なし(他人の投稿の削除など) |
 | 404 | 対象が存在しない(削除済みの投稿を含む) |
 | 409 | 競合(ユーザーIDの重複) |
 
@@ -269,13 +271,13 @@ HTTP ステータスと `detail`(メッセージ)を含む JSON(RFC 9457 の Pro
 - 通知(フォローされた・いいねされた・コメントされた)
 - 鍵アカウント、ブロック、ミュート
 - `like_count` などの非正規化による高速化
-- CloudFront による画像配信、Spring Session JDBC によるセッション外部化と EC2 の複数台化
+- CloudFront による画像配信、EC2 の複数台化(JWT はステートレスなので、署名鍵 `JWT_SECRET` を共有すれば足りる)
 
 ### 10.3 未確定事項
 | 項目 | 現状の扱い |
 |---|---|
 | AWS 上にサーバーを構築するか | 未決。構成図のみ先に作成([05-infrastructure.md](05-infrastructure.md)) |
-| EC2 の台数 / セッションの持ち方 | 当面 1 台+サーバーメモリのセッション。複数台にする場合は Spring Session JDBC を採用 |
+| EC2 の台数 | 当面 1 台。ログイン状態は JWT でサーバーに持たないため、複数台にする場合は署名鍵(`JWT_SECRET`)を全台で共有する |
 | 独自ドメインと ACM 証明書 | 未定。ALB で HTTPS 終端するには独自ドメインが必要 |
 | 構築手段 | TaskManagement と同じ Terraform + AWS CLI を想定(未決) |
 

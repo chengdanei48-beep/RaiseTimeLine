@@ -115,7 +115,7 @@ sequenceDiagram
 | `DB_USER` / `DB_PASSWORD` / `DB_NAME` | Terraform 等で生成。パスワードは SSM Parameter Store に保管 | 認証情報をコードに置かない |
 | `SERVER_ADDRESS` | `0.0.0.0` | ALB から届くようにする |
 | `SERVER_FORWARD_HEADERS_STRATEGY` | `framework` | ALB が付ける `X-Forwarded-*` を信頼し、HTTPS と認識させる |
-| `SERVER_SERVLET_SESSION_COOKIE_SECURE` | `true` | HTTPS のときだけ Cookie を送る |
+| `JWT_SECRET` | 32 バイト以上のランダム文字列。SSM Parameter Store(SecureString)に保管 | JWT の署名鍵。複数台にする場合は全台で同じ値にする。ソース・ログに出さない |
 | `APP_S3_BUCKET` / `AWS_REGION` | 画像用バケット名 / `ap-northeast-1` | 署名付き URL の発行先 |
 
 ## 6. 運用・費用
@@ -142,9 +142,9 @@ ALB は**常時課金**。TaskManagement は費用面から ALB を使わない�
 | 項目 | 現状の想定 | 備考 |
 |---|---|---|
 | 構築するか | 未決 | 決まったら Issue を起票し、Terraform(`infra/terraform/`)で作る案 |
-| 独自ドメインと ACM 証明書 | 未定 | **ALB で HTTPS を終端するには、独自ドメインと ACM 証明書が必要**。ドメインなしだと ALB の既定の DNS 名で HTTP のみとなり、`Secure` Cookie とセッションが使えない。ドメインを取るか、HTTP のまま検証するかを決める |
+| 独自ドメインと ACM 証明書 | 未定 | **ALB で HTTPS を終端するには、独自ドメインと ACM 証明書が必要**。ドメインなしだと ALB の既定の DNS 名で HTTP のみとなる。認証は JWT(Cookie を使わない)なので動作はするが、トークンが平文で流れるため検証用途に限る。ドメインを取るか、HTTP のまま検証するかを決める |
 | EC2 の台数 | 当面 1 台 | ALB は複数台も振り分けられる |
-| セッションの持ち方 | 当面はサーバーのメモリ | **複数台にすると、ログイン状態が台数間で共有されない**。複数台にするなら Spring Session JDBC(PostgreSQL に保存)にするか、ALB のスティッキーセッションを使う(TaskManagement のガイド 10 章と同じ論点) |
+| ログイン状態の持ち方 | JWT(サーバーに状態を持たない) | 複数台にしても、`JWT_SECRET` を全台で同じにすれば追加対策は不要(セッション共有やスティッキーセッションは不要) |
 | RDS のバックアップ・Multi-AZ | なし(学習用) | 削除するとデータは消える。SNS として残したいデータが出たら有効化を検討 |
 | CloudFront | なし | 画像の配信をさらに速くする拡張候補 |
 | WAF | なし | 公開範囲を広げる場合に検討 |
@@ -157,4 +157,4 @@ ALB は**常時課金**。TaskManagement は費用面から ALB を使わない�
 | サブネット | デフォルト VPC | 専用 VPC(パブリック 2 + プライベート 2)案。デフォルト VPC でも可 |
 | S3 | jar の受け渡し用 | 同左に加え、**画像用バケット**(非公開・署名付き URL) |
 | アプリの配置 | docker compose(app + caddy) | docker compose(app のみ)または jar 直接起動 |
-| 台数 | 1 台(セッションがメモリのため) | 当面 1 台(複数台化には対策が必要) |
+| 台数 | 1 台(セッションがメモリのため) | 当面 1 台(JWT のため、複数台化は鍵の共有のみで可能) |
