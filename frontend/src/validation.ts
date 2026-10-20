@@ -38,3 +38,14 @@ export function validatePassword(value: string): string | null {
 export function validatePasswordConfirm(password: string, confirm: string): string | null {
   return password === confirm ? null : 'パスワードが一致しません'
 }
+
+export const POST_MAX_LENGTH = 280
+
+/** 前後の空白を除いた値で検証する(サーバーも除いてから検証・保存する)。 */
+export function validatePostBody(value: string): string | null {
+  const body = value.trim()
+  if (body === '') {
+    return '本文を入力してください'
+  }
+  return body.length <= POST_MAX_LENGTH ? null : '本文は1〜280文字で入力してください'
+}

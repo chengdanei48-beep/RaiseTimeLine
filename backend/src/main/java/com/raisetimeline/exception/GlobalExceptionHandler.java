@@ -46,6 +46,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
   }
 
+  @ExceptionHandler(PostNotFoundException.class)
+  public ProblemDetail handleNotFound(PostNotFoundException ex) {
+    return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+  }
+
+  @ExceptionHandler(ForbiddenException.class)
+  public ProblemDetail handleForbidden(ForbiddenException ex) {
+    return ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+  }
+
+  @ExceptionHandler(InvalidRequestException.class)
+  public ProblemDetail handleInvalidRequest(InvalidRequestException ex) {
+    return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+  }
+
   @ExceptionHandler(Exception.class)
   public ProblemDetail handleUnexpected(Exception ex) {
     LOG.error("予期しないエラー", ex);

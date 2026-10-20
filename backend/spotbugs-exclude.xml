@@ -7,4 +7,9 @@
       <Class name="~com\.raisetimeline\.(service|controller|security)\..*"/>
     </Or>
   </Match>
+  <!-- コンストラクタで List.copyOf した不変リストを保持するだけなので誤検知 -->
+  <Match>
+    <Bug pattern="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    <Class name="com.raisetimeline.dto.TimelineResponse"/>
+  </Match>
 </FindBugsFilter>
