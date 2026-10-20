@@ -116,6 +116,7 @@ sequenceDiagram
 | `SERVER_ADDRESS` | `0.0.0.0` | ALB から届くようにする |
 | `SERVER_FORWARD_HEADERS_STRATEGY` | `framework` | ALB が付ける `X-Forwarded-*` を信頼し、HTTPS と認識させる |
 | `JWT_SECRET` | 32 バイト以上のランダム文字列。SSM Parameter Store(SecureString)に保管 | JWT の署名鍵。複数台にする場合は全台で同じ値にする。ソース・ログに出さない |
+| `REFRESH_COOKIE_SECURE` | 未設定(既定 `true`) | リフレッシュトークンの Cookie に Secure 属性を付ける。HTTPS 運用では変更しない(HTTP での検証時のみ `false`) |
 | `APP_S3_BUCKET` / `AWS_REGION` | 画像用バケット名 / `ap-northeast-1` | 署名付き URL の発行先 |
 
 ## 6. 運用・費用
@@ -142,9 +143,9 @@ ALB は**常時課金**。TaskManagement は費用面から ALB を使わない�
 | 項目 | 現状の想定 | 備考 |
 |---|---|---|
 | 構築するか | 未決 | 決まったら Issue を起票し、Terraform(`infra/terraform/`)で作る案 |
-| 独自ドメインと ACM 証明書 | 未定 | **ALB で HTTPS を終端するには、独自ドメインと ACM 証明書が必要**。ドメインなしだと ALB の既定の DNS 名で HTTP のみとなる。認証は JWT(Cookie を使わない)なので動作はするが、トークンが平文で流れるため検証用途に限る。ドメインを取るか、HTTP のまま検証するかを決める |
+| 独自ドメインと ACM 証明書 | 未定 | **ALB で HTTPS を終端するには、独自ドメインと ACM 証明書が必要**。ドメインなしだと ALB の既定の DNS 名で HTTP のみとなる。HTTP のままでも動作はするが、トークンが平文で流れるため検証用途に限る。その場合、リフレッシュトークンの Cookie に Secure 属性が付いていると送られないため、環境変数 `REFRESH_COOKIE_SECURE=false` を設定する(HTTPS 運用では既定の true のまま)。ドメインを取るか、HTTP のまま検証するかを決める |
 | EC2 の台数 | 当面 1 台 | ALB は複数台も振り分けられる |
-| ログイン状態の持ち方 | JWT(サーバーに状態を持たない) | 複数台にしても、`JWT_SECRET` を全台で同じにすれば追加対策は不要(セッション共有やスティッキーセッションは不要) |
+| ログイン状態の持ち方 | アクセストークン JWT(サーバーに状態を持たない)+ リフレッシュトークン(DB で管理) | 複数台にしても、`JWT_SECRET` を全台で同じにし、DB(RDS)を共有すれば追加対策は不要(セッション共有やスティッキーセッションは不要) |
 | RDS のバックアップ・Multi-AZ | なし(学習用) | 削除するとデータは消える。SNS として残したいデータが出たら有効化を検討 |
 | CloudFront | なし | 画像の配信をさらに速くする拡張候補 |
 | WAF | なし | 公開範囲を広げる場合に検討 |

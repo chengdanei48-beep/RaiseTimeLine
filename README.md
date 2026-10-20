@@ -41,7 +41,7 @@ X(旧Twitter)のような、テキスト中心のタイムライン型 SNS で�
 | バックエンド | Java / Spring Boot(Web MVC・MyBatis・Security・Actuator) | JDK 25 / Spring Boot 4.1.1 |
 | ビルド | Maven(Maven Wrapper) | 3.9.16 |
 | データベース | PostgreSQL(開発は Docker、AWS では RDS)/ マイグレーションは Flyway。検索に `pg_trgm` を使用 | 17 |
-| 認証 | Spring Security(JWT / `Authorization: Bearer`)+ BCrypt。Cookie を使わないため CSRF は無効 | Spring Boot 管理バージョン |
+| 認証 | Spring Security(アクセストークン JWT / `Authorization: Bearer` + リフレッシュトークン HttpOnly Cookie)+ BCrypt。CSRF は無効(Cookie は SameSite=Strict で認証 API のパスに限定) | Spring Boot 管理バージョン |
 | フロントエンド | React / TypeScript / Vite / React Router | React 19.3.0 / TypeScript 7.0.2 / Vite 8.3.2 / React Router 7.18.4 |
 | Lint(フロントエンド) | Oxlint | 1.86.0 |
 | 静的解析(バックエンド) | Spotless・Checkstyle・SpotBugs | 2.46.1 / 10.26.1 / 4.9.8 |
@@ -164,13 +164,14 @@ cd frontend && npm run build     # 型チェック + ビルド
 
 ## API
 
-すべて JSON。`/api/auth/register`・`/api/auth/login`・`/api/health` 以外は、ログインして得たアクセストークンを `Authorization: Bearer <token>` ヘッダで送る必要があります。
+すべて JSON。`/api/auth/register`・`/api/auth/login`・`/api/auth/refresh`・`/api/auth/logout`・`/api/health` 以外は、ログインして得たアクセストークン(15 分)を `Authorization: Bearer <token>` ヘッダで送る必要があります。リフレッシュトークン(7 日)は HttpOnly Cookie で受け渡します。
 
 | メソッド | パス | 内容 |
 |---|---|---|
 | POST | `/api/auth/register` | アカウント登録(登録後はログイン状態) |
 | POST | `/api/auth/login` | ログイン |
-| POST | `/api/auth/logout` | ログアウト |
+| POST | `/api/auth/refresh` | アクセストークンの更新(リフレッシュトークンの Cookie を使用) |
+| POST | `/api/auth/logout` | ログアウト(リフレッシュトークンを失効) |
 | GET | `/api/auth/me` | ログイン中のユーザーを取得 |
 | GET | `/api/timeline` | タイムライン(`scope`=`following`/`all`、`cursor`、`limit`) |
 | POST | `/api/posts` | 投稿の作成(`body`、`imageKeys`) |

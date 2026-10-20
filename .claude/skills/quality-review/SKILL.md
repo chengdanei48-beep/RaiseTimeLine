@@ -53,7 +53,7 @@ cd infra/terraform && terraform plan -input=false -out tfplan   # 要 aws sso lo
 - トランザクション: Service は `@Transactional(readOnly = true)` を基本とし、更新メソッドだけ `@Transactional`。
 - MyBatis: SQL は Mapper に集約し、値は `#{}` でバインドする(`${}` で文字列連結しない。やむを得ない動的な列名・並び順はホワイトリスト)。N+1 がない(集計は GROUP BY / JOIN)。LIKE のワイルドカードをエスケープ。エンティティを API で直接返さない(DTO を使う)。大文字小文字を区別しない比較は `lower()` の式インデックスと条件が一致している。
 - 競合・制約: 一意制約違反が 500 にならず 409 になる。上限チェック(列10個など)の競合を意識している。
-- セキュリティ: 公開パスが最小(`/api/auth/register`・`login`・`health`、静的ファイル)。actuator は health のみ。JWT: 署名鍵(`JWT_SECRET`)が環境変数で渡され 32 バイト以上を検証している・期限(`exp`)と署名を検証している・ログイン失敗でIDの有無を区別しない。パスワード・トークン・署名鍵をログ・`toString` に出さない。
+- セキュリティ: 公開パスが最小(`/api/auth/register`・`login`・`refresh`・`logout`・`health`、静的ファイル)。リフレッシュトークンは HttpOnly・SameSite=Strict・Path 限定の Cookie で、DB にはハッシュのみ保存し、ローテーションと再利用検知がある。actuator は health のみ。JWT: 署名鍵(`JWT_SECRET`)が環境変数で渡され 32 バイト以上を検証している・期限(`exp`)と署名を検証している・ログイン失敗でIDの有無を区別しない。パスワード・トークン・署名鍵をログ・`toString` に出さない。
 - 設定: DB パスワード等は環境変数で上書き可能。`show-sql` など開発用設定は `dev` プロファイルのみ。
 - テスト: 正常系だけでなく、境界値(文字数上限)・他人のデータ(404)・未ログイン(401)・不正/期限切れトークン(401)を確認している。
 
