@@ -137,3 +137,11 @@ textarea { font: inherit; color: inherit; }
 
 .empty { text-align: center; color: var(--muted); padding: 24px 16px; margin: 0; }
 .more { text-align: center; padding: 12px; }
+
+.new-posts {
+  position: sticky; top: 8px; z-index: 1;
+  display: block; width: 100%; margin-bottom: 12px; padding: 10px;
+  border: 1px solid var(--primary); border-radius: var(--radius);
+  background: var(--surface); color: var(--primary); font-weight: 700;
+}
+.new-posts:hover { background: rgba(29, 155, 240, .1); }
