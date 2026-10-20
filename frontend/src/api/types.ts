@@ -23,3 +23,17 @@ export interface LoginInput {
   username: string
   password: string
 }
+
+export interface Post {
+  id: number
+  body: string
+  createdAt: string
+  updatedAt: string
+  author: User
+}
+
+export interface TimelinePage {
+  items: Post[]
+  /** 次ページが無いとき null */
+  nextCursor: string | null
+}

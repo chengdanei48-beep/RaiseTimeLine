@@ -109,6 +109,7 @@ CREATE INDEX idx_users_display_name_trgm ON users USING gin (lower(display_name)
 | user_id | BIGINT | NO | FK → users.id | 投稿者 |
 | body | VARCHAR(280) | NO | | 本文(1〜280文字) |
 | created_at | TIMESTAMPTZ | NO | DEFAULT now() | 投稿日時 |
+| updated_at | TIMESTAMPTZ | NO | DEFAULT now() | 最終更新日時(編集時に更新。`created_at` より後なら「編集済み」) |
 | deleted_at | TIMESTAMPTZ | YES | | 論理削除日時 |
 
 ```sql
