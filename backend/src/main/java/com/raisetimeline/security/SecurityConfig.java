@@ -20,7 +20,13 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-/** JWT(Authorization: Bearer)によるステートレス認証。Cookie を使わないため CSRF は無効。 */
+/**
+ * アクセストークン(JWT, Authorization: Bearer)によるステートレス認証。
+ *
+ * <p>Cookie を認証に使うのはリフレッシュトークンだけで、/api/auth/refresh と /api/auth/logout に限る。 この Cookie は
+ * SameSite=Strict かつ Path=/api/auth のため他サイトからのリクエストには付かず、 また応答のアクセストークンは攻撃者のページから読めない。よって CSRF
+ * は無効にする。
+ */
 @Configuration
 public class SecurityConfig {
 
@@ -33,7 +39,12 @@ public class SecurityConfig {
         .httpBasic(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/api/auth/register", "/api/auth/login", "/api/health")
+                auth.requestMatchers(
+                        "/api/auth/register",
+                        "/api/auth/login",
+                        "/api/auth/refresh",
+                        "/api/auth/logout",
+                        "/api/health")
                     .permitAll()
                     .requestMatchers("/api/**")
                     .authenticated()

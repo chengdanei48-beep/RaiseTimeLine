@@ -1,13 +1,16 @@
 package com.raisetimeline.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import jakarta.servlet.http.Cookie;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -35,6 +38,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 @SpringBootTest(properties = "app.jwt.secret=test-secret-test-secret-test-secret-0123456789")
@@ -255,7 +259,6 @@ class AuthApiTest {
         .perform(get("/api/auth/me"))
         .andExpect(status().isUnauthorized())
         .andExpect(jsonPath("$.status").value(401));
-    mockMvc.perform(post("/api/auth/logout")).andExpect(status().isUnauthorized());
   }
 
   @Test
@@ -263,13 +266,115 @@ class AuthApiTest {
     mockMvc.perform(get("/api/posts")).andExpect(status().isUnauthorized());
   }
 
+  // ---- リフレッシュトークン ----
+
   @Test
-  void ログアウトは有効なトークンで204() throws Exception {
-    String body = register("alice", "アリス", PASSWORD).andReturn().getResponse().getContentAsString();
+  void 登録とログインでリフレッシュトークンがHttpOnlyのCookieで発行される() throws Exception {
+    MvcResult registered = register("alice", "アリス", PASSWORD).andReturn();
+    MvcResult loggedIn = login("alice", PASSWORD).andReturn();
+
+    for (MvcResult result : List.of(registered, loggedIn)) {
+      String setCookie = result.getResponse().getHeader("Set-Cookie");
+      assertThat(setCookie)
+          .startsWith("refresh_token=")
+          .contains("HttpOnly", "SameSite=Strict", "Path=/api/auth", "Max-Age=604800");
+      assertThat(result.getResponse().getContentAsString()).doesNotContain("refresh");
+      assertThat(JsonPath.<Integer>read(result.getResponse().getContentAsString(), "$.expiresIn"))
+          .isEqualTo(900);
+    }
+  }
+
+  @Test
+  void リフレッシュトークンは平文では保存されない() throws Exception {
+    String refreshToken = refreshTokenOf(register("alice", "アリス", PASSWORD).andReturn());
+
+    assertThat(
+            jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM refresh_tokens WHERE token_hash = ?",
+                Integer.class,
+                refreshToken))
+        .isZero();
+    assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM refresh_tokens", Integer.class))
+        .isEqualTo(1);
+  }
+
+  @Test
+  void リフレッシュすると新しいトークンが発行され古いリフレッシュトークンは使えない() throws Exception {
+    String first = refreshTokenOf(register("alice", "アリス", PASSWORD).andReturn());
+
+    MvcResult refreshed = refresh(first).andExpect(status().isOk()).andReturn();
+    String second = refreshTokenOf(refreshed);
+    String body = refreshed.getResponse().getContentAsString();
+
+    assertThat(second).isNotEqualTo(first);
+    assertThat(JsonPath.<String>read(body, "$.user.username")).isEqualTo("alice");
+    mockMvc
+        .perform(get("/api/auth/me").header("Authorization", "Bearer " + token(body)))
+        .andExpect(status().isOk());
+
+    // 古いトークンの直後の再提示(複数タブの同時リフレッシュ)は 401 だが、新しいトークンは生きている
+    refresh(first).andExpect(status().isUnauthorized());
+    refresh(second).andExpect(status().isOk());
+  }
+
+  @Test
+  void 猶予を過ぎて使用済みトークンが再提示されると全トークンが失効する() throws Exception {
+    String first = refreshTokenOf(register("alice", "アリス", PASSWORD).andReturn());
+    String second = refreshTokenOf(refresh(first).andReturn());
+    jdbcTemplate.update(
+        "UPDATE refresh_tokens SET revoked_at = now() - interval '1 minute' "
+            + "WHERE revoked_at IS NOT NULL");
+
+    refresh(first).andExpect(status().isUnauthorized());
+
+    refresh(second).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void 期限切れのリフレッシュトークンは401でCookieが削除される() throws Exception {
+    String token = refreshTokenOf(register("alice", "アリス", PASSWORD).andReturn());
+    jdbcTemplate.update("UPDATE refresh_tokens SET expires_at = now() - interval '1 minute'");
+
+    refresh(token)
+        .andExpect(status().isUnauthorized())
+        .andExpect(jsonPath("$.detail").value("ログインが必要です"))
+        .andExpect(header().string("Set-Cookie", containsString("Max-Age=0")));
+  }
+
+  @Test
+  void 不正または無いリフレッシュトークンは401() throws Exception {
+    refresh("not-a-real-token").andExpect(status().isUnauthorized());
+    mockMvc
+        .perform(post("/api/auth/refresh"))
+        .andExpect(status().isUnauthorized())
+        .andExpect(header().string("Set-Cookie", containsString("Max-Age=0")));
+  }
+
+  @Test
+  void ログアウトでリフレッシュトークンが失効しCookieが削除される() throws Exception {
+    String token = refreshTokenOf(register("alice", "アリス", PASSWORD).andReturn());
 
     mockMvc
-        .perform(post("/api/auth/logout").header("Authorization", "Bearer " + token(body)))
-        .andExpect(status().isNoContent());
+        .perform(post("/api/auth/logout").cookie(new Cookie("refresh_token", token)))
+        .andExpect(status().isNoContent())
+        .andExpect(header().string("Set-Cookie", containsString("Max-Age=0")));
+
+    refresh(token).andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void ログアウトはCookieもトークンもなくても204() throws Exception {
+    mockMvc.perform(post("/api/auth/logout")).andExpect(status().isNoContent());
+  }
+
+  @Test
+  void ユーザーが削除されるとリフレッシュトークンも削除される() throws Exception {
+    register("alice", "アリス", PASSWORD);
+
+    jdbcTemplate.update("DELETE FROM users");
+
+    assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM refresh_tokens", Integer.class))
+        .isZero();
   }
 
   @Test
@@ -354,6 +459,18 @@ class AuthApiTest {
         post("/api/auth/login")
             .contentType(MediaType.APPLICATION_JSON)
             .content("{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, password)));
+  }
+
+  private ResultActions refresh(String refreshToken) throws Exception {
+    return mockMvc.perform(
+        post("/api/auth/refresh").cookie(new Cookie("refresh_token", refreshToken)));
+  }
+
+  /** Set-Cookie ヘッダからリフレッシュトークンの値を取り出す。 */
+  private static String refreshTokenOf(MvcResult result) {
+    String setCookie = result.getResponse().getHeader("Set-Cookie");
+    assertThat(setCookie).startsWith("refresh_token=");
+    return setCookie.substring("refresh_token=".length(), setCookie.indexOf(';'));
   }
 
   private static String registerJson(String username, String displayName, String password) {

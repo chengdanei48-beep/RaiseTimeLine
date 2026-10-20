@@ -10,6 +10,7 @@ erDiagram
     USERS ||--o{ LIKES : "いいねする"
     USERS ||--o{ FOLLOWS : "フォローする(follower)"
     USERS ||--o{ FOLLOWS : "フォローされる(followee)"
+    USERS ||--o{ REFRESH_TOKENS : "ログイン状態を持つ"
     POSTS ||--o{ POST_IMAGES : "画像を持つ"
     POSTS ||--o{ COMMENTS : "コメントを受ける"
     POSTS ||--o{ LIKES : "いいねを受ける"
@@ -23,6 +24,14 @@ erDiagram
         varchar avatar_key "S3オブジェクトキー(任意)"
         timestamptz created_at
         timestamptz updated_at
+    }
+    REFRESH_TOKENS {
+        bigint id PK
+        bigint user_id FK
+        varchar token_hash UK "SHA-256(トークン本体は保存しない)"
+        timestamptz expires_at
+        timestamptz revoked_at "失効日時(未失効は NULL)"
+        timestamptz created_at
     }
     POSTS {
         bigint id PK
@@ -78,6 +87,20 @@ CREATE INDEX idx_users_username_trgm     ON users USING gin (lower(username)    
 CREATE INDEX idx_users_display_name_trgm ON users USING gin (lower(display_name) gin_trgm_ops);
 ```
 `ILIKE '%キーワード%'` の部分一致をインデックスで高速化するためです。
+
+### refresh_tokens
+リフレッシュトークン(F-AUTH)。ログインのたびに 1 行作り、リフレッシュのたびに新しい行へ置き換える(ローテーション)。
+| カラム | 型 | NULL | 制約 | 説明 |
+|---|---|---|---|---|
+| id | BIGINT GENERATED ALWAYS AS IDENTITY | NO | PK | |
+| user_id | BIGINT | NO | FK → users.id, `ON DELETE CASCADE` | 持ち主 |
+| token_hash | VARCHAR(64) | NO | UNIQUE | トークンの SHA-256(16 進)。**トークン本体は保存しない** |
+| expires_at | TIMESTAMPTZ | NO | | 有効期限(発行から 7 日) |
+| revoked_at | TIMESTAMPTZ | YES | | 失効日時。ローテーション・ログアウト・盗難検知で設定 |
+| created_at | TIMESTAMPTZ | NO | DEFAULT now() | 発行日時 |
+
+- `user_id` にインデックス(全失効・期限切れ削除用)。
+- 期限切れの行は、そのユーザーのリフレッシュ時に削除する(定期ジョブは使わない)。
 
 ### posts
 | カラム | 型 | NULL | 制約 | 説明 |

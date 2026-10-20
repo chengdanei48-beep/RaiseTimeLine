@@ -148,8 +148,8 @@ TaskManagement と同じ構成を想定する。
 
 | 区分 | 要件 |
 |---|---|
-| セキュリティ | パスワードは BCrypt でハッシュ化。HTTPS 前提(AWS では ALB で終端)。トークンは `Authorization` ヘッダで送り Cookie を使わないため、CSRF 対策は不要、XSS 対策(出力のエスケープ)、認可チェック(他人の投稿・コメントは削除不可、他人のプロフィールは編集不可)。権限のない操作は 403、存在しない・削除済みの対象は 404 |
-| 認証方式 | ユーザーID+パスワード。JWT(アクセストークンを `Authorization: Bearer` ヘッダで送るステートレス方式。有効期間 24 時間、リフレッシュトークンなし)。TaskManagement のセッション方式からの意図的な変更。ID・パスワードを忘れた場合の復旧手段は用意しない |
+| セキュリティ | パスワードは BCrypt でハッシュ化。HTTPS 前提(AWS では ALB で終端)。アクセストークンは `Authorization` ヘッダで送り、リフレッシュトークンは HttpOnly・SameSite=Strict の Cookie(Path は `/api/auth` に限定)で受け渡すため、CSRF 対策は追加しない。XSS 対策(出力のエスケープ)、認可チェック(他人の投稿・コメントは削除不可、他人のプロフィールは編集不可)。権限のない操作は 403、存在しない・削除済みの対象は 404 |
+| 認証方式 | ユーザーID+パスワード。アクセストークン(JWT, 15 分。`Authorization: Bearer` ヘッダで送り、画面ではメモリにのみ保持)+ リフレッシュトークン(7 日。HttpOnly Cookie。使用のたびに再発行し、使用済みの再提示は全失効)。TaskManagement のセッション方式からの意図的な変更。ID・パスワードを忘れた場合の復旧手段は用意しない |
 | 性能 | 一覧は 20 件ずつ取得(カーソル方式)。学習規模(ユーザー数十人・投稿数千件)で、一覧の表示が 1 秒以内を目標とする |
 | 整合性 | いいね・フォローの重複登録は DB の複合主キーで防止。冪等な API とする |
 | 画像保存 | AWS S3(非公開バケット)。署名付き URL でアップロード・表示。DB にはオブジェクトキーのみ保存 |
@@ -166,7 +166,7 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 | バックエンド(FW) | Spring Boot | 4.1.1 | ビルドは Maven(Maven Wrapper 3.9.16) |
 | データベースアクセス | MyBatis(mybatis-spring-boot-starter) | 4.1.0 | PostgreSQL 用 JDBC ドライバ。SQL は Mapper に記述する(JPA は使わない) |
 | データベース | PostgreSQL | 17(開発: Docker `postgres:17-alpine` / AWS: RDS) | テーブル定義は Flyway。検索用に `pg_trgm` 拡張を使用 |
-| 認証 | Spring Security(OAuth2 Resource Server による JWT 検証、HS256)+ BCrypt | Spring Boot 管理バージョン | 署名鍵は環境変数 `JWT_SECRET`。CSRF は無効(Cookie を使わない) |
+| 認証 | Spring Security(OAuth2 Resource Server による JWT 検証、HS256)+ BCrypt | Spring Boot 管理バージョン | 署名鍵は環境変数 `JWT_SECRET`。CSRF は無効(Cookie はリフレッシュトークンのみで、SameSite=Strict・Path=`/api/auth`) |
 | フロントエンド(言語) | TypeScript | 7.0.2 | |
 | フロントエンド(UI) | React / React DOM | 19.3.0 | Next.js は使用しない |
 | フロントエンド(ビルド) | Vite(+ `@vitejs/plugin-react`) | 8.3.2(+ 6.1.1) | 開発サーバーは 5173 番固定 |
@@ -188,7 +188,7 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 | 公開範囲 | PC 内のみ | インターネット(AWS)を想定 | 複数ユーザーが使う SNS のため |
 | ロードバランサー | 使わない(費用) | ALB を使う前提 | 利用者の指定。常時課金が発生する(05 参照) |
 | 画像 | なし | S3 | 画像投稿機能のため |
-| 認証方式 | セッション(Cookie)+ CSRF | **JWT**(`Authorization: Bearer`) | 状態をサーバーに持たず、EC2 の複数台化でセッション共有が不要になる。ログアウトのサーバー側失効はしない(F-AUTH 6章) |
+| 認証方式 | セッション(Cookie)+ CSRF | **JWT のアクセストークン**(`Authorization: Bearer`)+ **リフレッシュトークン**(HttpOnly Cookie, DB 管理) | API の認証は状態を持たず、EC2 の複数台化でセッション共有が不要になる。アクセストークンを短命(15 分)にし、ログアウト・盗難検知はリフレッシュトークンの失効で行う(F-AUTH 6章) |
 | データベースアクセス | Spring Data JPA | **MyBatis** | SQL を明示的に書いて学ぶため(`lower(username)` 検索や集計など) |
 
 ---
@@ -199,13 +199,14 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 テーブル定義・ER 図は [04-er-diagram.md](04-er-diagram.md) を正とする。テーブルは `users` / `posts` / `post_images` / `comments` / `likes` / `follows` の 6 つ。
 
 ### 7.2 API 一覧
-画面とバックエンドは JSON の REST API で通信する。`/api/auth/register`・`/api/auth/login`・`/api/health` 以外は、ログイン(`Authorization: Bearer` ヘッダのアクセストークン)が必要。詳細は各機能定義書を参照。
+画面とバックエンドは JSON の REST API で通信する。`/api/auth/register`・`/api/auth/login`・`/api/auth/refresh`・`/api/auth/logout`・`/api/health` 以外は、ログイン(`Authorization: Bearer` ヘッダのアクセストークン)が必要。詳細は各機能定義書を参照。
 
 | メソッド | パス | 内容 | 成功時 | 機能 |
 |---|---|---|---|---|
 | POST | `/api/auth/register` | アカウント登録(登録後はログイン状態) | 201 | F-AUTH |
 | POST | `/api/auth/login` | ログイン | 200 | F-AUTH |
-| POST | `/api/auth/logout` | ログアウト | 204 | F-AUTH |
+| POST | `/api/auth/refresh` | アクセストークンの更新(リフレッシュトークンの Cookie を使用) | 200 | F-AUTH |
+| POST | `/api/auth/logout` | ログアウト(リフレッシュトークンを失効) | 204 | F-AUTH |
 | GET | `/api/auth/me` | ログイン中のユーザーを取得 | 200 | F-AUTH |
 | GET | `/api/timeline` | タイムライン。`scope`=`following`/`all`、`cursor`、`limit` | 200 | F-TL |
 | POST | `/api/posts` | 投稿の作成(`body`、`imageKeys`) | 201 | F-POST |
@@ -233,7 +234,7 @@ HTTP ステータスと `detail`(メッセージ)を含む JSON(RFC 9457 の Pro
 | ステータス | 意味 |
 |---|---|
 | 400 | 入力内容の誤り(必須未入力・文字数超過・画像の形式/サイズ不正・自分自身のフォローなど) |
-| 401 | 未ログイン(トークンなし・署名不正・期限切れ)、またはユーザーID・パスワードの誤り |
+| 401 | 未ログイン(トークンなし・署名不正・期限切れ。リフレッシュトークンの無効・失効を含む)、またはユーザーID・パスワードの誤り |
 | 403 | 権限なし(他人の投稿の削除など) |
 | 404 | 対象が存在しない(削除済みの投稿を含む) |
 | 409 | 競合(ユーザーIDの重複) |
