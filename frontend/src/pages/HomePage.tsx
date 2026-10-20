@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, GENERIC_ERROR } from '../api/client'
 import { fetchTimeline } from '../api/posts'
 import type { Post } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { PostCard } from '../components/PostCard'
 import { PostComposer } from '../components/PostComposer'
+
+/** 新着を確認する間隔(ミリ秒) */
+const POLL_INTERVAL_MS = 30_000
 
 /** S-03 タイムライン(全体。画像・フォロー中タブ・いいね/コメント数は後続) */
 export function HomePage() {
@@ -14,6 +17,18 @@ export function HomePage() {
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  /** ポーリングで見つけた、まだ表示していない新着 */
+  const [pending, setPending] = useState<Post[]>([])
+  const sentinelRef = useRef<HTMLDivElement>(null)
+  const newestIdRef = useRef(0)
+
+  // ID は投稿順に増えるので、表示中で最大の ID より大きいものが「新着」
+  const newestId = posts.reduce((max, p) => Math.max(max, p.id), 0)
+  const newPosts = pending.filter((p) => p.id > newestId)
+
+  useEffect(() => {
+    newestIdRef.current = newestId
+  }, [newestId])
 
   useEffect(() => {
     let cancelled = false
@@ -39,6 +54,61 @@ export function HomePage() {
     }
   }, [])
 
+  // 新着のポーリング。タブが見えていない間は問い合わせない
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (document.hidden) {
+        return
+      }
+      fetchTimeline(null)
+        .then((page) => setPending(page.items.filter((p) => p.id > newestIdRef.current)))
+        .catch(() => {
+          // 一時的な失敗は黙って次の周期に任せる
+        })
+    }, POLL_INTERVAL_MS)
+    return () => clearInterval(timer)
+  }, [])
+
+  const handleLoadMore = useCallback(async () => {
+    if (nextCursor === null) {
+      return
+    }
+    setLoading(true)
+    setError(null)
+    try {
+      const page = await fetchTimeline(nextCursor)
+      setPosts((current) => {
+        const known = new Set(current.map((p) => p.id))
+        return [...current, ...page.items.filter((p) => !known.has(p.id))]
+      })
+      setNextCursor(page.nextCursor)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : GENERIC_ERROR)
+    } finally {
+      setLoading(false)
+    }
+  }, [nextCursor])
+
+  // 無限スクロール: 末尾の目印が見えたら次ページを読み込む。
+  // 読み込み後も見えたままなら監視し直して続けて読む。失敗時は止めて「もっと見る」で再試行させる
+  const canAutoLoad = nextCursor !== null && !loading && error === null
+  useEffect(() => {
+    const target = sentinelRef.current
+    if (!canAutoLoad || target === null) {
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          void handleLoadMore()
+        }
+      },
+      { rootMargin: '200px' },
+    )
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [canAutoLoad, handleLoadMore])
+
   async function handleLogout() {
     setLoggingOut(true)
     try {
@@ -49,18 +119,13 @@ export function HomePage() {
     }
   }
 
-  async function handleLoadMore() {
-    setLoading(true)
-    setError(null)
-    try {
-      const page = await fetchTimeline(nextCursor)
-      setPosts((current) => [...current, ...page.items])
-      setNextCursor(page.nextCursor)
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : GENERIC_ERROR)
-    } finally {
-      setLoading(false)
-    }
+  function showNewPosts() {
+    setPosts((current) => {
+      const known = new Set(current.map((p) => p.id))
+      return [...newPosts.filter((p) => !known.has(p.id)), ...current]
+    })
+    setPending([])
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function handleUpdated(updated: Post) {
@@ -90,6 +155,12 @@ export function HomePage() {
 
       <PostComposer user={user} onPosted={(post) => setPosts((current) => [post, ...current])} />
 
+      {newPosts.length > 0 && (
+        <button className="new-posts" type="button" onClick={showNewPosts}>
+          {newPosts.length >= 20 ? '20件以上の' : `${newPosts.length}件の`}新しい投稿を表示
+        </button>
+      )}
+
       <section className="card" aria-label="タイムライン">
         {posts.map((post) => (
           <PostCard
@@ -109,9 +180,10 @@ export function HomePage() {
           </p>
         )}
         {loading && <span className="loading">読み込み中…</span>}
-        {!loading && nextCursor !== null && (
+        {nextCursor !== null && <div ref={sentinelRef} aria-hidden="true" />}
+        {!loading && nextCursor !== null && error !== null && (
           <div className="more">
-            <button className="btn btn-outline" type="button" onClick={handleLoadMore}>
+            <button className="btn btn-outline" type="button" onClick={() => void handleLoadMore()}>
               もっと見る
             </button>
           </div>
