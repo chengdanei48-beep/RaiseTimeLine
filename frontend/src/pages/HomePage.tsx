@@ -20,15 +20,17 @@ export function HomePage() {
   /** ポーリングで見つけた、まだ表示していない新着 */
   const [pending, setPending] = useState<Post[]>([])
   const sentinelRef = useRef<HTMLDivElement>(null)
-  const newestIdRef = useRef(0)
+  const newestRef = useRef(0)
 
-  // ID は投稿順に増えるので、表示中で最大の ID より大きいものが「新着」
-  const newestId = posts.reduce((max, p) => Math.max(max, p.id), 0)
-  const newPosts = pending.filter((p) => p.id > newestId)
+  // 並び順は公開日時(createdAt)なので、表示中で最新の公開日時より後で、未表示のものが「新着」
+  // (予約投稿は ID が古いまま公開されるため、ID では判定できない)
+  const newestAt = posts.reduce((max, p) => Math.max(max, Date.parse(p.createdAt)), 0)
+  const shownIds = new Set(posts.map((p) => p.id))
+  const newPosts = pending.filter((p) => Date.parse(p.createdAt) > newestAt && !shownIds.has(p.id))
 
   useEffect(() => {
-    newestIdRef.current = newestId
-  }, [newestId])
+    newestRef.current = newestAt
+  }, [newestAt])
 
   useEffect(() => {
     let cancelled = false
@@ -61,7 +63,7 @@ export function HomePage() {
         return
       }
       fetchTimeline(null)
-        .then((page) => setPending(page.items.filter((p) => p.id > newestIdRef.current)))
+        .then((page) => setPending(page.items.filter((p) => Date.parse(p.createdAt) > newestRef.current)))
         .catch(() => {
           // 一時的な失敗は黙って次の周期に任せる
         })

@@ -9,6 +9,7 @@ import com.raisetimeline.exception.PostNotFoundException;
 import com.raisetimeline.repository.PostMapper;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -21,6 +22,9 @@ public class PostService {
   public static final int DEFAULT_LIMIT = 20;
   public static final int MAX_LIMIT = 50;
 
+  /** 予約できるのは現在からこの日数先まで。 */
+  public static final int MAX_SCHEDULE_DAYS = 30;
+
   private static final String INVALID_CURSOR = "cursor が不正です";
 
   private final PostMapper postMapper;
@@ -29,29 +33,49 @@ public class PostService {
     this.postMapper = postMapper;
   }
 
+  /** scheduledAt が null なら即時投稿、あれば予約投稿(公開日時 = scheduledAt)。 */
   @Transactional
-  public PostResponse create(long userId, String body) {
+  public PostResponse create(long userId, String body, Instant scheduledAt) {
     Post post = new Post();
     post.setUserId(userId);
     post.setBody(body);
-    postMapper.insert(post);
-    return PostResponse.from(find(post.getId()));
+    if (scheduledAt == null) {
+      postMapper.insert(post);
+    } else {
+      Instant now = Instant.now();
+      if (!scheduledAt.isAfter(now)) {
+        throw new InvalidRequestException("予約日時は現在より後を指定してください");
+      }
+      if (scheduledAt.isAfter(now.plus(MAX_SCHEDULE_DAYS, ChronoUnit.DAYS))) {
+        throw new InvalidRequestException("予約日時は" + MAX_SCHEDULE_DAYS + "日先までで指定してください");
+      }
+      // DB(マイクロ秒)と同じ精度にそろえる。カーソルの比較がずれないようにするため
+      post.setCreatedAt(scheduledAt.truncatedTo(ChronoUnit.MICROS));
+      postMapper.insertScheduled(post);
+    }
+    return PostResponse.from(find(userId, post.getId()));
   }
 
-  public PostResponse get(long postId) {
-    return PostResponse.from(find(postId));
+  public PostResponse get(long userId, long postId) {
+    return PostResponse.from(find(userId, postId));
+  }
+
+  /** 本人の予約中の投稿(公開が近い順)。 */
+  public List<PostResponse> scheduled(long userId) {
+    return postMapper.findScheduledByUser(userId).stream().map(PostResponse::from).toList();
   }
 
   @Transactional
   public PostResponse update(long userId, long postId, String body) {
-    requireOwner(userId, find(postId));
+    requireOwner(userId, find(userId, postId));
     postMapper.updateBody(postId, body);
-    return PostResponse.from(find(postId));
+    return PostResponse.from(find(userId, postId));
   }
 
+  /** 予約中の投稿に対しては「取消」になる。 */
   @Transactional
   public void delete(long userId, long postId) {
-    requireOwner(userId, find(postId));
+    requireOwner(userId, find(userId, postId));
     postMapper.softDelete(postId);
   }
 
@@ -79,8 +103,13 @@ public class PostService {
     return new TimelineResponse(page.stream().map(PostResponse::from).toList(), nextCursor);
   }
 
-  private Post find(long postId) {
-    return postMapper.findById(postId).orElseThrow(PostNotFoundException::new);
+  /** 予約中の投稿は本人以外には「存在しない」扱い(404)。 */
+  private Post find(long userId, long postId) {
+    Post post = postMapper.findById(postId).orElseThrow(PostNotFoundException::new);
+    if (post.getCreatedAt().isAfter(Instant.now()) && post.getUserId() != userId) {
+      throw new PostNotFoundException();
+    }
+    return post;
   }
 
   private static void requireOwner(long userId, Post post) {

@@ -113,7 +113,7 @@ TaskManagement と同じ構成を想定する。
 |---|---|---|
 | アカウント・ログイン | [F-AUTH](features/F-AUTH.md) | ユーザーID+パスワードで登録・ログイン・ログアウト |
 | タイムライン | [F-TL](features/F-TL.md) | 「フォロー中」「全体」の2タブ。新しい順、20件ずつ |
-| 投稿 | [F-POST](features/F-POST.md) | テキスト(最大280字)+画像(最大4枚)。自分の投稿の編集・削除 |
+| 投稿 | [F-POST](features/F-POST.md) | テキスト(最大280字)+画像(最大4枚)。自分の投稿の編集・削除。日時指定の予約投稿 |
 | コメント | [F-CMT](features/F-CMT.md) | 投稿へのコメント・削除。コメント数の表示 |
 | いいね | [F-LIKE](features/F-LIKE.md) | いいね・取り消し。いいね数の表示 |
 | フォロー | [F-FOLLOW](features/F-FOLLOW.md) | フォロー・解除、フォロー中/フォロワー一覧と件数 |
@@ -139,6 +139,7 @@ TaskManagement と同じ構成を想定する。
 | BR-13 | 「フォロー中」タイムラインは、自分とフォロー中のユーザーの投稿を表示する。フォローが 0 人でも自分の投稿は表示する |
 | BR-14 | フォロー数・フォロワー数はプロフィールに表示する。**インプレッション数・閲覧数は、どの画面にも表示せず、記録もしない** |
 | BR-15 | ユーザー検索は、ログイン中の全ユーザーが行える。結果に自分自身は含めない |
+| BR-16 | 投稿は日時を指定して予約できる(現在より後〜30日先)。予約中の投稿は公開日時まで、タイムライン・投稿詳細・一覧に出ず、**本人だけ**が予約一覧で確認・編集・取消できる(他人には存在しない扱いで 404)。公開日時は `posts.created_at` に保存する(定期ジョブは使わない) |
 
 ---
 
@@ -209,7 +210,8 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 | POST | `/api/auth/logout` | ログアウト(リフレッシュトークンを失効) | 204 | F-AUTH |
 | GET | `/api/auth/me` | ログイン中のユーザーを取得 | 200 | F-AUTH |
 | GET | `/api/timeline` | タイムライン。`scope`=`following`/`all`、`cursor`、`limit` | 200 | F-TL |
-| POST | `/api/posts` | 投稿の作成(`body`、`imageKeys`) | 201 | F-POST |
+| POST | `/api/posts` | 投稿の作成(`body`、`imageKeys`、任意の `scheduledAt` で予約投稿) | 201 | F-POST |
+| GET | `/api/posts/scheduled` | 自分の予約中の投稿一覧(公開が近い順) | 200 | F-POST |
 | GET | `/api/posts/{id}` | 投稿の詳細(件数・自分のいいね済みを含む) | 200 | F-TL |
 | PATCH | `/api/posts/{id}` | 投稿の編集(本人のみ。`body` のみ) | 200 | F-POST |
 | DELETE | `/api/posts/{id}` | 投稿の削除(本人のみ) | 204 | F-POST |

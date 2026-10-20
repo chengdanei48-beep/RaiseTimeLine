@@ -7,6 +7,7 @@ import com.raisetimeline.dto.UpdatePostRequest;
 import com.raisetimeline.service.PostService;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -35,13 +36,19 @@ public class PostController {
   @PostMapping("/posts")
   public ResponseEntity<PostResponse> create(
       @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody CreatePostRequest request) {
-    PostResponse created = postService.create(userId(jwt), request.body());
+    PostResponse created = postService.create(userId(jwt), request.body(), request.scheduledAt());
     return ResponseEntity.created(URI.create("/api/posts/" + created.id())).body(created);
   }
 
+  /** 自分の予約中の投稿一覧。 */
+  @GetMapping("/posts/scheduled")
+  public List<PostResponse> scheduled(@AuthenticationPrincipal Jwt jwt) {
+    return postService.scheduled(userId(jwt));
+  }
+
   @GetMapping("/posts/{id}")
-  public PostResponse get(@PathVariable long id) {
-    return postService.get(id);
+  public PostResponse get(@AuthenticationPrincipal Jwt jwt, @PathVariable long id) {
+    return postService.get(userId(jwt), id);
   }
 
   @PatchMapping("/posts/{id}")

@@ -108,7 +108,7 @@ CREATE INDEX idx_users_display_name_trgm ON users USING gin (lower(display_name)
 | id | BIGINT GENERATED ALWAYS AS IDENTITY | NO | PK | 投稿ID |
 | user_id | BIGINT | NO | FK → users.id | 投稿者 |
 | body | VARCHAR(280) | NO | | 本文(1〜280文字) |
-| created_at | TIMESTAMPTZ | NO | DEFAULT now() | 投稿日時 |
+| created_at | TIMESTAMPTZ | NO | DEFAULT now() | 投稿日時(公開日時)。予約投稿は指定した公開日時を入れ、`now()` より先の間は予約中として非公開(BR-16) |
 | updated_at | TIMESTAMPTZ | NO | DEFAULT now() | 最終更新日時(編集時に更新。`created_at` より後なら「編集済み」) |
 | deleted_at | TIMESTAMPTZ | YES | | 論理削除日時 |
 

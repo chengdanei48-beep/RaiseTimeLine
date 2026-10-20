@@ -29,6 +29,8 @@ export interface Post {
   body: string
   createdAt: string
   updatedAt: string
+  /** 公開日時(createdAt)がまだ先の予約中 */
+  scheduled: boolean
   author: User
 }
 

@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -264,7 +266,126 @@ class PostApiTest {
         .andExpect(status().isNotFound());
   }
 
+  // ---- 予約投稿 ----
+
+  @Test
+  void 予約投稿は201で予約中として返りタイムラインには出ない() throws Exception {
+    createScheduled(alice, "あとで", Instant.now().plus(1, ChronoUnit.HOURS))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.scheduled").value(true));
+    createPost(alice, "いますぐ").andExpect(jsonPath("$.scheduled").value(false));
+
+    mockMvc
+        .perform(get("/api/timeline").header("Authorization", "Bearer " + alice))
+        .andExpect(jsonPath("$.items.length()").value(1))
+        .andExpect(jsonPath("$.items[0].body").value("いますぐ"));
+  }
+
+  @Test
+  void 予約中の投稿は本人の予約一覧にだけ出る() throws Exception {
+    Instant later = Instant.now().plus(2, ChronoUnit.HOURS);
+    Instant sooner = Instant.now().plus(1, ChronoUnit.HOURS);
+    createScheduled(alice, "遅い", later);
+    createScheduled(alice, "早い", sooner);
+    createScheduled(bob, "ボブの予約", sooner);
+
+    mockMvc
+        .perform(get("/api/posts/scheduled").header("Authorization", "Bearer " + alice))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].body").value("早い"))
+        .andExpect(jsonPath("$[1].body").value("遅い"));
+  }
+
+  @Test
+  void 予約中の投稿は他人には存在しない扱いで本人は取得編集取消できる() throws Exception {
+    long id = createScheduledAndGetId(alice, "ひみつ", Instant.now().plus(1, ChronoUnit.HOURS));
+
+    mockMvc
+        .perform(get("/api/posts/" + id).header("Authorization", "Bearer " + bob))
+        .andExpect(status().isNotFound());
+    updatePost(bob, id, "x").andExpect(status().isNotFound());
+    mockMvc
+        .perform(delete("/api/posts/" + id).header("Authorization", "Bearer " + bob))
+        .andExpect(status().isNotFound());
+
+    mockMvc
+        .perform(get("/api/posts/" + id).header("Authorization", "Bearer " + alice))
+        .andExpect(status().isOk());
+    updatePost(alice, id, "更新").andExpect(status().isOk());
+    mockMvc
+        .perform(delete("/api/posts/" + id).header("Authorization", "Bearer " + alice))
+        .andExpect(status().isNoContent());
+    mockMvc
+        .perform(get("/api/posts/scheduled").header("Authorization", "Bearer " + alice))
+        .andExpect(jsonPath("$.length()").value(0));
+  }
+
+  @Test
+  void 予約時刻を過ぎるとタイムラインに出て予約一覧から消える() throws Exception {
+    long id = createScheduledAndGetId(alice, "公開される", Instant.now().plus(1, ChronoUnit.HOURS));
+
+    // 公開日時を過去へ進めて、時刻が来た状態にする
+    jdbcTemplate.update(
+        "UPDATE posts SET created_at = now() - interval '1 minute' WHERE id = ?", id);
+
+    mockMvc
+        .perform(get("/api/timeline").header("Authorization", "Bearer " + bob))
+        .andExpect(jsonPath("$.items.length()").value(1))
+        .andExpect(jsonPath("$.items[0].body").value("公開される"))
+        .andExpect(jsonPath("$.items[0].scheduled").value(false));
+    mockMvc
+        .perform(get("/api/posts/scheduled").header("Authorization", "Bearer " + alice))
+        .andExpect(jsonPath("$.length()").value(0));
+  }
+
+  @Test
+  void 予約日時は未来から30日先までしか指定できない() throws Exception {
+    createScheduled(alice, "過去", Instant.now().minus(1, ChronoUnit.MINUTES))
+        .andExpect(status().isBadRequest());
+    createScheduled(alice, "31日先", Instant.now().plus(31, ChronoUnit.DAYS))
+        .andExpect(status().isBadRequest());
+    createScheduled(alice, "29日先", Instant.now().plus(29, ChronoUnit.DAYS))
+        .andExpect(status().isCreated());
+  }
+
+  @Test
+  void 予約日時の形式が不正なら400になる() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/posts")
+                .header("Authorization", "Bearer " + alice)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"body\":\"x\",\"scheduledAt\":\"あした\"}"))
+        .andExpect(status().isBadRequest());
+  }
+
   // ---- ヘルパー ----
+
+  private ResultActions createScheduled(String token, String body, Instant scheduledAt)
+      throws Exception {
+    return mockMvc.perform(
+        post("/api/posts")
+            .header("Authorization", "Bearer " + token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                "{\"body\":"
+                    + JsonPathString.quote(body)
+                    + ",\"scheduledAt\":\""
+                    + scheduledAt
+                    + "\"}"));
+  }
+
+  private long createScheduledAndGetId(String token, String body, Instant scheduledAt)
+      throws Exception {
+    String response =
+        createScheduled(token, body, scheduledAt)
+            .andExpect(status().isCreated())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+    return JsonPath.<Number>read(response, "$.id").longValue();
+  }
 
   private ResultActions createPost(String token, String body) throws Exception {
     return mockMvc.perform(

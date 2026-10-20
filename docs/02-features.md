@@ -33,6 +33,7 @@
 | F-POST-04 | 画像表示 | 枚数に応じたグリッドで表示(署名付きGET URL) | 高 | ログイン |
 | F-POST-05 | 投稿削除 | 自分の投稿を論理削除 | 高 | 作成者 |
 | F-POST-06 | 投稿編集 | 自分の投稿の本文を編集(画像は変更不可)。「編集済み」を表示 | 高 | 作成者 |
+| F-POST-07 | 予約投稿 | 公開日時(現在より後〜30日先)を指定して投稿。予約一覧・取消。いずれもモーダルで操作 | 中 | 作成者 |
 
 ### 1.4 コメント (CMT) — [F-CMT](features/F-CMT.md)
 | ID | 機能名 | 概要 | 優先度 | 権限 |
@@ -84,7 +85,7 @@
 | F-AUTH-03, 04, 05 | 共通ヘッダー | users, refresh_tokens |
 | F-TL-01〜04 | S-03 タイムライン | posts, post_images, comments, likes, follows, users |
 | F-TL-05, F-CMT-01〜04 | S-04 投稿詳細 | posts, comments, likes, users |
-| F-POST-01〜06 | S-03(投稿フォーム/表示), S-04, S-05 | posts, post_images |
+| F-POST-01〜07 | S-03(投稿フォーム/表示), S-04, S-05 | posts, post_images |
 | F-LIKE-01〜03 | S-03, S-04, S-05 | likes |
 | F-FOLLOW-01, 02, 06 | S-05, S-07, S-08 | follows |
 | F-FOLLOW-03, 04 | S-08 フォロー中・フォロワー一覧 | follows, users |
