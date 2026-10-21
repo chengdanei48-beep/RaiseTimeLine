@@ -58,7 +58,8 @@ export function PostEditorModal({
   }
 
   // dialog 自身(余白を持たない)へのクリックは、背景(::backdrop)へのクリック。
-  // Esc で閉じる手段が別にあるため、マウス専用の補助としてここで登録する
+  // Esc は keydown で処理する(cancel イベントは Chrome では中止できない場合があり、
+  // 確認で「キャンセル」を選んでも閉じてしまうため)。IME の変換確定の Esc は無視する
   const requestCloseRef = useRef(requestClose)
   useEffect(() => {
     requestCloseRef.current = requestClose
@@ -73,8 +74,18 @@ export function PostEditorModal({
         requestCloseRef.current()
       }
     }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.isComposing) {
+        e.preventDefault()
+        requestCloseRef.current()
+      }
+    }
     dialog.addEventListener('click', onClick)
-    return () => dialog.removeEventListener('click', onClick)
+    dialog.addEventListener('keydown', onKeyDown)
+    return () => {
+      dialog.removeEventListener('click', onClick)
+      dialog.removeEventListener('keydown', onKeyDown)
+    }
   }, [])
 
   async function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
@@ -101,7 +112,7 @@ export function PostEditorModal({
       className="modal"
       aria-labelledby="post-editor-title"
       onCancel={(e) => {
-        // Esc は確認を挟むため、ブラウザの既定の閉じ方を止める
+        // keydown 以外の閉じ要求(Android の戻る等)用。確認を挟むため既定の閉じ方を止める
         e.preventDefault()
         requestClose()
       }}
