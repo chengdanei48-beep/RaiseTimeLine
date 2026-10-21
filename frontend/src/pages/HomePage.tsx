@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, GENERIC_ERROR } from '../api/client'
-import { fetchTimeline } from '../api/posts'
+import { createPost, fetchTimeline, updatePost } from '../api/posts'
 import type { Post } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { PostCard } from '../components/PostCard'
-import { PostComposer } from '../components/PostComposer'
+import { PostEditorModal } from '../components/PostEditorModal'
+
+/** 開いている投稿モーダル。作成か、編集する投稿 */
+type Editor = { kind: 'create' } | { kind: 'edit'; post: Post }
 
 /** 新着を確認する間隔(ミリ秒) */
 const POLL_INTERVAL_MS = 30_000
@@ -19,6 +22,7 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null)
   /** ポーリングで見つけた、まだ表示していない新着 */
   const [pending, setPending] = useState<Post[]>([])
+  const [editor, setEditor] = useState<Editor | null>(null)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const newestIdRef = useRef(0)
 
@@ -128,8 +132,23 @@ export function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  function handleUpdated(updated: Post) {
-    setPosts((current) => current.map((p) => (p.id === updated.id ? updated : p)))
+  async function handleCreate(body: string) {
+    const post = await createPost(body)
+    setPosts((current) => [post, ...current])
+    setEditor(null)
+  }
+
+  async function handleEdit(target: Post, body: string) {
+    try {
+      const updated = await updatePost(target.id, body)
+      setPosts((current) => current.map((p) => (p.id === updated.id ? updated : p)))
+    } catch (err) {
+      if (!(err instanceof ApiError && err.status === 404)) {
+        throw err
+      }
+      handleDeleted(target.id) // 既に削除されている
+    }
+    setEditor(null)
   }
 
   function handleDeleted(id: number) {
@@ -145,6 +164,9 @@ export function HomePage() {
       <header className="topbar">
         <h1>ホーム</h1>
         <span className="grow" />
+        <button className="btn" type="button" onClick={() => setEditor({ kind: 'create' })}>
+          投稿する
+        </button>
         <span className="muted">
           {user.displayName}(@{user.username})
         </span>
@@ -152,8 +174,6 @@ export function HomePage() {
           ログアウト
         </button>
       </header>
-
-      <PostComposer user={user} onPosted={(post) => setPosts((current) => [post, ...current])} />
 
       {newPosts.length > 0 && (
         <button className="new-posts" type="button" onClick={showNewPosts}>
@@ -167,7 +187,7 @@ export function HomePage() {
             key={post.id}
             post={post}
             mine={post.author.id === user.id}
-            onUpdated={handleUpdated}
+            onEdit={(target) => setEditor({ kind: 'edit', post: target })}
             onDeleted={handleDeleted}
           />
         ))}
@@ -189,6 +209,27 @@ export function HomePage() {
           </div>
         )}
       </section>
+
+      {editor?.kind === 'create' && (
+        <PostEditorModal
+          user={user}
+          title="投稿を作成"
+          submitLabel="投稿する"
+          onSubmit={handleCreate}
+          onClose={() => setEditor(null)}
+        />
+      )}
+      {editor?.kind === 'edit' && (
+        <PostEditorModal
+          key={editor.post.id}
+          user={user}
+          title="投稿を編集"
+          submitLabel="保存"
+          initialBody={editor.post.body}
+          onSubmit={(body) => handleEdit(editor.post, body)}
+          onClose={() => setEditor(null)}
+        />
+      )}
     </>
   )
 }
