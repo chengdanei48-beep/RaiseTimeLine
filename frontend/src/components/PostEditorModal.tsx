@@ -130,13 +130,15 @@ export function PostEditorModal({
           <textarea
             ref={textareaRef}
             aria-label="本文"
+            aria-invalid={error !== null ? true : undefined}
+            aria-describedby={error !== null ? 'post-editor-error' : undefined}
             placeholder="いまどうしてる?"
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
         </div>
         {error !== null && (
-          <p className="form-error" role="alert">
+          <p id="post-editor-error" className="form-error" role="alert">
             {error}
           </p>
         )}
