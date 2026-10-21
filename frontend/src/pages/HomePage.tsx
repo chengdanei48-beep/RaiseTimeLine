@@ -12,6 +12,9 @@ type Editor = { kind: 'create' } | { kind: 'edit'; post: Post }
 /** 新着を確認する間隔(ミリ秒) */
 const POLL_INTERVAL_MS = 30_000
 
+/** タイムライン API の 1 ページの件数。新着がこれ以上だと、ポーリングで全件は取れない */
+const PAGE_SIZE = 20
+
 /** S-03 タイムライン(全体。画像・フォロー中タブ・いいね/コメント数は後続) */
 export function HomePage() {
   const { user, logout } = useAuth()
@@ -23,6 +26,10 @@ export function HomePage() {
   /** ポーリングで見つけた、まだ表示していない新着 */
   const [pending, setPending] = useState<Post[]>([])
   const [editor, setEditor] = useState<Editor | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+  const [refreshError, setRefreshError] = useState<string | null>(null)
+  /** 一覧を取得し直すたびに増やす。取り直し前に始めた続きの読み込みの結果を捨てるために使う */
+  const generationRef = useRef(0)
   const sentinelRef = useRef<HTMLDivElement>(null)
   const newestIdRef = useRef(0)
 
@@ -77,10 +84,14 @@ export function HomePage() {
     if (nextCursor === null) {
       return
     }
+    const generation = generationRef.current
     setLoading(true)
     setError(null)
     try {
       const page = await fetchTimeline(nextCursor)
+      if (generation !== generationRef.current) {
+        return // 待っている間に一覧が取得し直された。古いカーソルの続きは使わない
+      }
       setPosts((current) => {
         const known = new Set(current.map((p) => p.id))
         return [...current, ...page.items.filter((p) => !known.has(p.id))]
@@ -123,12 +134,33 @@ export function HomePage() {
     }
   }
 
-  function showNewPosts() {
-    setPosts((current) => {
-      const known = new Set(current.map((p) => p.id))
-      return [...newPosts.filter((p) => !known.has(p.id)), ...current]
-    })
-    setPending([])
+  async function showNewPosts() {
+    if (newPosts.length >= PAGE_SIZE) {
+      // 新着が 1 ページに収まらず、取れていない分が出る。先頭から取得し直して置き換える
+      // (続きは無限スクロールで読み込む)
+      setRefreshing(true)
+      setRefreshError(null)
+      try {
+        const page = await fetchTimeline(null)
+        generationRef.current += 1
+        setPosts(page.items)
+        setNextCursor(page.nextCursor)
+        setError(null)
+        setLoading(false)
+        setPending([])
+      } catch (err) {
+        setRefreshError(err instanceof ApiError ? err.message : GENERIC_ERROR)
+        return
+      } finally {
+        setRefreshing(false)
+      }
+    } else {
+      setPosts((current) => {
+        const known = new Set(current.map((p) => p.id))
+        return [...newPosts.filter((p) => !known.has(p.id)), ...current]
+      })
+      setPending([])
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -176,9 +208,16 @@ export function HomePage() {
       </header>
 
       {newPosts.length > 0 && (
-        <button className="new-posts" type="button" onClick={showNewPosts}>
-          {newPosts.length >= 20 ? '20件以上の' : `${newPosts.length}件の`}新しい投稿を表示
-        </button>
+        <>
+          <button className="new-posts" type="button" onClick={() => void showNewPosts()} disabled={refreshing}>
+            {newPosts.length >= PAGE_SIZE ? `${PAGE_SIZE}件以上の` : `${newPosts.length}件の`}新しい投稿を表示
+          </button>
+          {refreshError !== null && (
+            <p className="form-error" role="alert">
+              {refreshError}
+            </p>
+          )}
+        </>
       )}
 
       <section className="card" aria-label="タイムライン">
