@@ -5,10 +5,13 @@ import { deletePost, likePost, unlikePost } from '../api/posts'
 import type { Post } from '../api/types'
 import { relativeTime } from '../relativeTime'
 import { Avatar } from './Avatar'
+import { useToast } from './ToastContext'
 
 interface PostCardProps {
   post: Post
   mine: boolean
+  /** 投稿詳細での表示(本文を大きくする) */
+  detail?: boolean
   /** 省略すると編集ボタンを出さない(投稿詳細) */
   onEdit?: (post: Post) => void
   /** いいねの操作で投稿の表示内容が変わったときに、新しい内容を渡す */
@@ -23,7 +26,8 @@ function describe(err: unknown): string {
 }
 
 /** 投稿1件。自分の投稿だけ、編集(モーダルを開く)と削除(確認つき)ができる。 */
-export function PostCard({ post, mine, onEdit, onChange, onDeleted }: PostCardProps) {
+export function PostCard({ post, mine, detail = false, onEdit, onChange, onDeleted }: PostCardProps) {
+  const showToast = useToast()
   const [mode, setMode] = useState<Mode>('view')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -72,6 +76,7 @@ export function PostCard({ post, mine, onEdit, onChange, onDeleted }: PostCardPr
     setError(null)
     try {
       await deletePost(post.id)
+      showToast('投稿を削除しました')
       onDeleted(post.id)
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
@@ -84,7 +89,7 @@ export function PostCard({ post, mine, onEdit, onChange, onDeleted }: PostCardPr
   }
 
   return (
-    <article className="post">
+    <article className={detail ? 'post detail' : 'post'}>
       <Avatar user={post.author} />
       <div className="post-main">
         <div className="post-head">
@@ -115,7 +120,7 @@ export function PostCard({ post, mine, onEdit, onChange, onDeleted }: PostCardPr
             <span aria-hidden="true">💬</span> {post.commentCount}
           </Link>
           <button
-            className={post.likedByMe ? 'action liked' : 'action'}
+            className={post.likedByMe ? 'action like liked' : 'action like'}
             type="button"
             aria-pressed={post.likedByMe}
             aria-label={`いいね ${post.likeCount}件`}
@@ -133,7 +138,7 @@ export function PostCard({ post, mine, onEdit, onChange, onDeleted }: PostCardPr
 
         {mode === 'confirmDelete' && (
           <dialog ref={dialogRef} className="confirm" aria-label="削除の確認" onCancel={cancel}>
-            <p>この投稿を削除しますか?</p>
+            <p>この投稿を削除しますか?(コメント・いいね・画像も見られなくなります)</p>
             <div className="confirm-actions">
               <button className="btn btn-outline" type="button" onClick={cancel} disabled={busy}>
                 キャンセル

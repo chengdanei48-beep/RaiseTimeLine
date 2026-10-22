@@ -4,6 +4,7 @@ import { deleteComment } from '../api/comments'
 import type { Comment } from '../api/types'
 import { relativeTime } from '../relativeTime'
 import { Avatar } from './Avatar'
+import { useToast } from './ToastContext'
 
 interface CommentItemProps {
   comment: Comment
@@ -13,6 +14,7 @@ interface CommentItemProps {
 
 /** コメント1件。自分のコメントだけ、削除(確認つき)ができる。 */
 export function CommentItem({ comment, mine, onDeleted }: CommentItemProps) {
+  const showToast = useToast()
   const [confirming, setConfirming] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -35,6 +37,7 @@ export function CommentItem({ comment, mine, onDeleted }: CommentItemProps) {
     setError(null)
     try {
       await deleteComment(comment.id)
+      showToast('コメントを削除しました')
       onDeleted(comment.id)
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
