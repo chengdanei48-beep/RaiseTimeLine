@@ -80,7 +80,7 @@ docs/
 
 ### 3.2 アプリ(実装時)
 TaskManagement と同じ構成を想定する。
-- `backend/` … Spring Boot(controller / service / repository(MyBatis の Mapper)/ entity / dto / security / exception)。テーブルは Flyway で管理
+- `backend/` … Spring Boot(controller / service / repository(MyBatis の Mapper インターフェース。SQL は `resources/mapper/*.xml`)/ entity / dto / security / exception)。テーブルは Flyway で管理
 - `frontend/` … React(pages / components / api)。ビルド成果物は backend の静的リソースに同梱し、実行プロセスを 1 つ(jar)にまとめる
 - `infra/terraform/` … AWS 構築コード(構築を行うと決めた時点で作成)
 
@@ -164,7 +164,7 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 |---|---|---|---|
 | バックエンド(言語) | Java(JDK) | 25(LTS) | |
 | バックエンド(FW) | Spring Boot | 4.1.1 | ビルドは Maven(Maven Wrapper 3.9.16) |
-| データベースアクセス | MyBatis(mybatis-spring-boot-starter) | 4.1.0 | PostgreSQL 用 JDBC ドライバ。SQL は Mapper に記述する(JPA は使わない) |
+| データベースアクセス | MyBatis(mybatis-spring-boot-starter) | 4.1.0 | PostgreSQL 用 JDBC ドライバ。SQL は Mapper XML(`resources/mapper/`)に記述する(JPA は使わない) |
 | データベース | PostgreSQL | 17(開発: Docker `postgres:17-alpine` / AWS: RDS) | テーブル定義は Flyway。検索用に `pg_trgm` 拡張を使用 |
 | 認証 | Spring Security(OAuth2 Resource Server による JWT 検証、HS256)+ BCrypt | Spring Boot 管理バージョン | 署名鍵は環境変数 `JWT_SECRET`。CSRF は無効(Cookie はリフレッシュトークンのみで、SameSite=Strict・Path=`/api/auth`) |
 | フロントエンド(言語) | TypeScript | 7.0.2 | |

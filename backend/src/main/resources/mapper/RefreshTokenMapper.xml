@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.raisetimeline.repository.RefreshTokenMapper">
+
+  <insert id="insert">
+    INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
+    VALUES (#{userId}, #{tokenHash}, #{expiresAt})
+  </insert>
+
+  <!-- ローテーションの同時実行を直列化するため、行ロックを取って取得する。 -->
+  <select id="findByHashForUpdate" resultType="com.raisetimeline.entity.RefreshToken">
+    SELECT * FROM refresh_tokens WHERE token_hash = #{tokenHash} FOR UPDATE
+  </select>
+
+  <update id="revoke">
+    UPDATE refresh_tokens SET revoked_at = #{at} WHERE id = #{id} AND revoked_at IS NULL
+  </update>
+
+  <update id="revokeByHash">
+    UPDATE refresh_tokens SET revoked_at = #{at}
+    WHERE token_hash = #{tokenHash} AND revoked_at IS NULL
+  </update>
+
+  <update id="revokeAllByUser">
+    UPDATE refresh_tokens SET revoked_at = #{at}
+    WHERE user_id = #{userId} AND revoked_at IS NULL
+  </update>
+
+  <delete id="deleteExpiredByUser">
+    DELETE FROM refresh_tokens WHERE user_id = #{userId} AND expires_at &lt; #{now}
+  </delete>
+
+</mapper>

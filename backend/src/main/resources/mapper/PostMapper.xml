@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.raisetimeline.repository.PostMapper">
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO posts (user_id, body) VALUES (#{userId}, #{body})
+  </insert>
+
+  <!-- 削除済みは見つからない扱い。 -->
+  <select id="findById" resultType="com.raisetimeline.entity.Post">
+    SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
+           u.username AS author_username, u.display_name AS author_display_name
+    FROM posts p JOIN users u ON u.id = p.user_id
+    WHERE p.id = #{id} AND p.deleted_at IS NULL
+  </select>
+
+  <update id="updateBody">
+    UPDATE posts SET body = #{body}, updated_at = now() WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <update id="softDelete">
+    UPDATE posts SET deleted_at = now() WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <!-- 新しい順。cursorCreatedAt が null なら先頭から。 -->
+  <select id="findTimeline" resultType="com.raisetimeline.entity.Post">
+    SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
+           u.username AS author_username, u.display_name AS author_display_name
+    FROM posts p JOIN users u ON u.id = p.user_id
+    WHERE p.deleted_at IS NULL
+    <if test="cursorCreatedAt != null">
+      AND (p.created_at, p.id) &lt; (#{cursorCreatedAt}, #{cursorId})
+    </if>
+    ORDER BY p.created_at DESC, p.id DESC
+    LIMIT #{limit}
+  </select>
+
+</mapper>

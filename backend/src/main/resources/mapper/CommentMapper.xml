@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.raisetimeline.repository.CommentMapper">
+
+  <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+    INSERT INTO comments (post_id, user_id, body) VALUES (#{postId}, #{userId}, #{body})
+  </insert>
+
+  <!-- 削除済みのコメント、削除済みの投稿のコメントは見つからない扱い。 -->
+  <select id="findById" resultType="com.raisetimeline.entity.Comment">
+    SELECT c.id, c.post_id, c.user_id, c.body, c.created_at,
+           u.username AS author_username, u.display_name AS author_display_name
+    FROM comments c
+      JOIN users u ON u.id = c.user_id
+      JOIN posts p ON p.id = c.post_id AND p.deleted_at IS NULL
+    WHERE c.id = #{id} AND c.deleted_at IS NULL
+  </select>
+
+  <update id="softDelete">
+    UPDATE comments SET deleted_at = now() WHERE id = #{id} AND deleted_at IS NULL
+  </update>
+
+  <!-- 古い順。cursorCreatedAt が null なら先頭から。 -->
+  <select id="findByPost" resultType="com.raisetimeline.entity.Comment">
+    SELECT c.id, c.post_id, c.user_id, c.body, c.created_at,
+           u.username AS author_username, u.display_name AS author_display_name
+    FROM comments c JOIN users u ON u.id = c.user_id
+    WHERE c.post_id = #{postId} AND c.deleted_at IS NULL
+    <if test="cursorCreatedAt != null">
+      AND (c.created_at, c.id) &gt; (#{cursorCreatedAt}, #{cursorId})
+    </if>
+    ORDER BY c.created_at ASC, c.id ASC
+    LIMIT #{limit}
+  </select>
+
+</mapper>
