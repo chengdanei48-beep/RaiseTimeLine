@@ -247,12 +247,11 @@ export function HomePage() {
         </>
       )}
 
-      <div className="tabs" role="tablist" aria-label="タイムラインの種類">
+      <nav className="tabs" aria-label="タイムラインの種類">
         <button
           className={scope === 'following' ? 'tab active' : 'tab'}
           type="button"
-          role="tab"
-          aria-selected={scope === 'following'}
+          aria-pressed={scope === 'following'}
           onClick={() => handleScopeChange('following')}
         >
           フォロー中
@@ -260,13 +259,12 @@ export function HomePage() {
         <button
           className={scope === 'all' ? 'tab active' : 'tab'}
           type="button"
-          role="tab"
-          aria-selected={scope === 'all'}
+          aria-pressed={scope === 'all'}
           onClick={() => handleScopeChange('all')}
         >
           全体
         </button>
-      </div>
+      </nav>
 
       <section className="card" aria-label="タイムライン">
         {posts.map((post) => (
