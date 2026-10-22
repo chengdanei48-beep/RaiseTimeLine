@@ -46,8 +46,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
   }
 
-  @ExceptionHandler(PostNotFoundException.class)
-  public ProblemDetail handleNotFound(PostNotFoundException ex) {
+  @ExceptionHandler({PostNotFoundException.class, CommentNotFoundException.class})
+  public ProblemDetail handleNotFound(RuntimeException ex) {
     return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
   }
 
