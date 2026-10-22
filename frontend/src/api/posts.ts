@@ -13,6 +13,18 @@ export function deletePost(id: number): Promise<void> {
   return authRequest<void>(`/api/posts/${id}`, 'DELETE')
 }
 
+export function fetchPost(id: number): Promise<Post> {
+  return authRequest<Post>(`/api/posts/${id}`, 'GET')
+}
+
+export function likePost(id: number): Promise<void> {
+  return authRequest<void>(`/api/posts/${id}/like`, 'PUT')
+}
+
+export function unlikePost(id: number): Promise<void> {
+  return authRequest<void>(`/api/posts/${id}/like`, 'DELETE')
+}
+
 export function fetchTimeline(cursor: string | null): Promise<TimelinePage> {
   const query = cursor === null ? '' : `?cursor=${encodeURIComponent(cursor)}`
   return authRequest<TimelinePage>(`/api/timeline${query}`, 'GET')

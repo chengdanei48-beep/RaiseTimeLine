@@ -30,6 +30,22 @@ export interface Post {
   createdAt: string
   updatedAt: string
   author: User
+  likeCount: number
+  commentCount: number
+  likedByMe: boolean
+}
+
+export interface Comment {
+  id: number
+  body: string
+  createdAt: string
+  author: User
+}
+
+export interface CommentPage {
+  items: Comment[]
+  /** 次ページが無いとき null */
+  nextCursor: string | null
 }
 
 export interface TimelinePage {

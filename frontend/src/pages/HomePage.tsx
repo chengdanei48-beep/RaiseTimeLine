@@ -15,7 +15,7 @@ const POLL_INTERVAL_MS = 30_000
 /** タイムライン API の 1 ページの件数。新着がこれ以上だと、ポーリングで全件は取れない */
 const PAGE_SIZE = 20
 
-/** S-03 タイムライン(全体。画像・フォロー中タブ・いいね/コメント数は後続) */
+/** S-03 タイムライン(全体。画像・フォロー中タブは後続) */
 export function HomePage() {
   const { user, logout } = useAuth()
   const [loggingOut, setLoggingOut] = useState(false)
@@ -227,6 +227,9 @@ export function HomePage() {
             post={post}
             mine={post.author.id === user.id}
             onEdit={(target) => setEditor({ kind: 'edit', post: target })}
+            onChange={(changed) =>
+              setPosts((current) => current.map((p) => (p.id === changed.id ? changed : p)))
+            }
             onDeleted={handleDeleted}
           />
         ))}
