@@ -20,7 +20,7 @@
 
 | パラメータ | 必須 | 内容 |
 |---|---|---|
-| scope | ○ | `following`(自分+フォロー中)または `all` |
+| scope | - | `following`(自分+フォロー中)または `all`。省略時は `all` |
 | cursor | - | 前回応答の `nextCursor`。省略で先頭から |
 | limit | - | 1〜50、既定 20 |
 

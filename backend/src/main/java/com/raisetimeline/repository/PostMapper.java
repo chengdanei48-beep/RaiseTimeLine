@@ -20,8 +20,17 @@ public interface PostMapper {
 
   int softDelete(@Param("id") long id);
 
-  /** 新しい順。cursorCreatedAt が null なら先頭から。 */
+  /** 新しい順。cursorCreatedAt が null なら先頭から。followingOnly なら、viewerId 自身と フォロー中のユーザーの投稿だけ。 */
   List<Post> findTimeline(
+      @Param("viewerId") long viewerId,
+      @Param("followingOnly") boolean followingOnly,
+      @Param("cursorCreatedAt") Instant cursorCreatedAt,
+      @Param("cursorId") Long cursorId,
+      @Param("limit") int limit);
+
+  /** 特定ユーザーの投稿。新しい順。cursorCreatedAt が null なら先頭から。 */
+  List<Post> findByUser(
+      @Param("userId") long userId,
       @Param("cursorCreatedAt") Instant cursorCreatedAt,
       @Param("cursorId") Long cursorId,
       @Param("limit") int limit);

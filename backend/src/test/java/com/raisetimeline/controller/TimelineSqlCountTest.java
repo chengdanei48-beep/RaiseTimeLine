@@ -31,6 +31,7 @@ class TimelineSqlCountTest {
 
   private String token;
   private long userId;
+  private int followerSeq;
 
   @BeforeEach
   void setUp() throws Exception {
@@ -63,6 +64,43 @@ class TimelineSqlCountTest {
     assertThat(withMany).isLessThanOrEqualTo(MAX_SQL_PER_PAGE);
   }
 
+  @Test
+  void フォロワー一覧のSQL発行数は人数に依らず一定で上限以下() throws Exception {
+    insertFollowers(3);
+    int withFew = sqlCountOf("/api/users/" + userId + "/followers?limit=3", 3);
+
+    insertFollowers(20);
+    int withMany = sqlCountOf("/api/users/" + userId + "/followers?limit=20", 20);
+
+    assertThat(withMany).as("3人取得: %d / 20人取得: %d", withFew, withMany).isEqualTo(withFew);
+    assertThat(withMany).isLessThanOrEqualTo(MAX_SQL_PER_PAGE);
+  }
+
+  @Test
+  void フォロー中タイムラインのSQL発行数は投稿数に依らず一定で上限以下() throws Exception {
+    insertPosts(5);
+    int withFew = sqlCountOf("/api/timeline?scope=following&limit=5", 5);
+
+    insertPosts(40);
+    int withMany = sqlCountOf("/api/timeline?scope=following&limit=20", 20);
+
+    assertThat(withMany).as("5件取得: %d / 20件取得: %d", withFew, withMany).isEqualTo(withFew);
+    assertThat(withMany).isLessThanOrEqualTo(MAX_SQL_PER_PAGE);
+  }
+
+  /** 自分をフォローする人を count 人増やす。 */
+  private void insertFollowers(int count) {
+    for (int i = 0; i < count; i++) {
+      Long followerId =
+          jdbcTemplate.queryForObject(
+              "INSERT INTO users (username, password_hash, display_name) VALUES (?, 'x', 'f') RETURNING id",
+              Long.class,
+              "f" + followerSeq++);
+      jdbcTemplate.update(
+          "INSERT INTO follows (follower_id, followee_id) VALUES (?, ?)", followerId, userId);
+    }
+  }
+
   private void insertPosts(int count) {
     for (int i = 0; i < count; i++) {
       Long postId =
@@ -79,15 +117,20 @@ class TimelineSqlCountTest {
 
   /** limit 件ちょうど返る状態で呼ぶこと。 */
   private int sqlCountOfTimeline(int limit) throws Exception {
+    return sqlCountOf("/api/timeline?limit=" + limit, limit);
+  }
+
+  /** path を呼び、items がちょうど expectedItems 件のときの SQL 発行数を返す。 */
+  private int sqlCountOf(String path, int expectedItems) throws Exception {
     SqlCountConfig.COUNT.set(0);
     String response =
         mockMvc
-            .perform(get("/api/timeline?limit=" + limit).header("Authorization", "Bearer " + token))
+            .perform(get(path).header("Authorization", "Bearer " + token))
             .andExpect(status().isOk())
             .andReturn()
             .getResponse()
             .getContentAsString();
-    assertThat(JsonPath.<java.util.List<?>>read(response, "$.items")).hasSize(limit);
+    assertThat(JsonPath.<java.util.List<?>>read(response, "$.items")).hasSize(expectedItems);
     return SqlCountConfig.COUNT.get();
   }
 }
