@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.raisetimeline.repository.LikeMapper">
+
+  <!-- すでにいいね済みなら何もしない(冪等)。 -->
+  <insert id="insert">
+    INSERT INTO likes (user_id, post_id) VALUES (#{userId}, #{postId}) ON CONFLICT DO NOTHING
+  </insert>
+
+  <delete id="delete">
+    DELETE FROM likes WHERE user_id = #{userId} AND post_id = #{postId}
+  </delete>
+
+</mapper>

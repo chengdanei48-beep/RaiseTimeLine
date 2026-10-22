@@ -7,6 +7,7 @@ X(Twitter)風のテキスト中心 SNS「RaiseTimeLine」(学習用)。インプ
 
 ## 技術スタック
 Java / Spring Boot (JDK25) + React + PostgreSQL(画像は AWS S3)。バージョンは `docs/01-requirements.md` 6.2。
+MyBatis の SQL は Mapper インターフェースのアノテーションではなく XML(`backend/src/main/resources/mapper/<Mapper名>.xml`)に書く。インターフェースは宣言のみ。
 
 ## 開発フロー(厳守)
 
