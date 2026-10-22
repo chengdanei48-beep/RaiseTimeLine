@@ -90,11 +90,17 @@ export function PostCard({ post, mine, detail = false, onEdit, onChange, onDelet
 
   return (
     <article className={detail ? 'post detail' : 'post'}>
-      <Avatar user={post.author} />
+      <Link to={`/users/${post.author.id}`} aria-label={`${post.author.displayName}のプロフィール`}>
+        <Avatar user={post.author} />
+      </Link>
       <div className="post-main">
         <div className="post-head">
-          <span className="name">{post.author.displayName}</span>
-          <span className="handle">@{post.author.username}</span>
+          <Link className="name" to={`/users/${post.author.id}`}>
+            {post.author.displayName}
+          </Link>
+          <Link className="handle" to={`/users/${post.author.id}`}>
+            @{post.author.username}
+          </Link>
           <span className="dot">·</span>
           <span className="time">{relativeTime(post.createdAt)}</span>
           {edited && <span className="edited">(編集済み)</span>}

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ApiError, GENERIC_ERROR } from '../api/client'
 import { createPost, fetchTimeline, updatePost } from '../api/posts'
-import type { Post } from '../api/types'
+import type { Post, TimelineScope } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { PostCard } from '../components/PostCard'
 import { PostEditorModal } from '../components/PostEditorModal'
@@ -16,7 +16,7 @@ const POLL_INTERVAL_MS = 30_000
 /** タイムライン API の 1 ページの件数。新着がこれ以上だと、ポーリングで全件は取れない */
 const PAGE_SIZE = 20
 
-/** S-03 タイムライン(全体。画像・フォロー中タブは後続) */
+/** S-03 タイムライン(「フォロー中」「全体」のタブ。画像は後続) */
 export function HomePage() {
   const { user, logout } = useAuth()
   const showToast = useToast()
@@ -27,6 +27,7 @@ export function HomePage() {
   const [error, setError] = useState<string | null>(null)
   /** ポーリングで見つけた、まだ表示していない新着 */
   const [pending, setPending] = useState<Post[]>([])
+  const [scope, setScope] = useState<TimelineScope>('following')
   const [editor, setEditor] = useState<Editor | null>(null)
   const [refreshing, setRefreshing] = useState(false)
   const [refreshError, setRefreshError] = useState<string | null>(null)
@@ -45,7 +46,7 @@ export function HomePage() {
 
   useEffect(() => {
     let cancelled = false
-    fetchTimeline(null)
+    fetchTimeline(scope, null)
       .then((page) => {
         if (!cancelled) {
           setPosts(page.items)
@@ -65,22 +66,30 @@ export function HomePage() {
     return () => {
       cancelled = true
     }
-  }, [])
+  }, [scope])
 
   // 新着のポーリング。タブが見えていない間は問い合わせない
   useEffect(() => {
+    let active = true
     const timer = setInterval(() => {
       if (document.hidden) {
         return
       }
-      fetchTimeline(null)
-        .then((page) => setPending(page.items.filter((p) => p.id > newestIdRef.current)))
+      fetchTimeline(scope, null)
+        .then((page) => {
+          if (active) {
+            setPending(page.items.filter((p) => p.id > newestIdRef.current))
+          }
+        })
         .catch(() => {
           // 一時的な失敗は黙って次の周期に任せる
         })
     }, POLL_INTERVAL_MS)
-    return () => clearInterval(timer)
-  }, [])
+    return () => {
+      active = false
+      clearInterval(timer)
+    }
+  }, [scope])
 
   const handleLoadMore = useCallback(async () => {
     if (nextCursor === null) {
@@ -90,7 +99,7 @@ export function HomePage() {
     setLoading(true)
     setError(null)
     try {
-      const page = await fetchTimeline(nextCursor)
+      const page = await fetchTimeline(scope, nextCursor)
       if (generation !== generationRef.current) {
         return // 待っている間に一覧が取得し直された。古いカーソルの続きは使わない
       }
@@ -104,7 +113,7 @@ export function HomePage() {
     } finally {
       setLoading(false)
     }
-  }, [nextCursor])
+  }, [nextCursor, scope])
 
   // 無限スクロール: 末尾の目印が見えたら次ページを読み込む。
   // 読み込み後も見えたままなら監視し直して続けて読む。失敗時は止めて「もっと見る」で再試行させる
@@ -126,6 +135,21 @@ export function HomePage() {
     return () => observer.disconnect()
   }, [canAutoLoad, handleLoadMore])
 
+  /** タブを切り替える。一覧を空にして、先頭から取得し直す(取得は scope が変わった effect が行う) */
+  function handleScopeChange(next: TimelineScope) {
+    if (next === scope) {
+      return
+    }
+    generationRef.current += 1 // 切り替え前の続きの読み込み結果を捨てる
+    setPosts([])
+    setNextCursor(null)
+    setPending([])
+    setError(null)
+    setRefreshError(null)
+    setLoading(true)
+    setScope(next)
+  }
+
   async function handleLogout() {
     setLoggingOut(true)
     try {
@@ -143,7 +167,7 @@ export function HomePage() {
       setRefreshing(true)
       setRefreshError(null)
       try {
-        const page = await fetchTimeline(null)
+        const page = await fetchTimeline(scope, null)
         generationRef.current += 1
         setPosts(page.items)
         setNextCursor(page.nextCursor)
@@ -223,6 +247,27 @@ export function HomePage() {
         </>
       )}
 
+      <div className="tabs" role="tablist" aria-label="タイムラインの種類">
+        <button
+          className={scope === 'following' ? 'tab active' : 'tab'}
+          type="button"
+          role="tab"
+          aria-selected={scope === 'following'}
+          onClick={() => handleScopeChange('following')}
+        >
+          フォロー中
+        </button>
+        <button
+          className={scope === 'all' ? 'tab active' : 'tab'}
+          type="button"
+          role="tab"
+          aria-selected={scope === 'all'}
+          onClick={() => handleScopeChange('all')}
+        >
+          全体
+        </button>
+      </div>
+
       <section className="card" aria-label="タイムライン">
         {posts.map((post) => (
           <PostCard
@@ -237,7 +282,11 @@ export function HomePage() {
           />
         ))}
         {!loading && error === null && posts.length === 0 && (
-          <p className="empty">まだ投稿がありません。最初の投稿をしてみましょう</p>
+          <p className="empty">
+            {scope === 'following'
+              ? 'まだ投稿がありません。「全体」で気になる人を見つけて、フォローしてみましょう'
+              : 'まだ投稿がありません。最初の投稿をしてみましょう'}
+          </p>
         )}
         {error !== null && (
           <p className="form-error card-pad" role="alert">

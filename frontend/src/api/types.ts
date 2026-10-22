@@ -53,3 +53,34 @@ export interface TimelinePage {
   /** 次ページが無いとき null */
   nextCursor: string | null
 }
+
+export interface Profile {
+  id: number
+  username: string
+  displayName: string
+  bio: string | null
+  avatarUrl: string | null
+  postCount: number
+  followingCount: number
+  followerCount: number
+  followedByMe: boolean
+  isMe: boolean
+}
+
+export interface FollowUser {
+  id: number
+  username: string
+  displayName: string
+  avatarUrl: string | null
+  bio: string | null
+  /** 自分自身の行では null(フォローボタンを出さない) */
+  followedByMe: boolean | null
+}
+
+export interface FollowUserPage {
+  items: FollowUser[]
+  /** 次ページが無いとき null */
+  nextCursor: string | null
+}
+
+export type TimelineScope = 'following' | 'all'

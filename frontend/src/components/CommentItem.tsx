@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router'
 import { ApiError, GENERIC_ERROR } from '../api/client'
 import { deleteComment } from '../api/comments'
 import type { Comment } from '../api/types'
@@ -51,11 +52,17 @@ export function CommentItem({ comment, mine, onDeleted }: CommentItemProps) {
 
   return (
     <article className="post">
-      <Avatar user={comment.author} />
+      <Link to={`/users/${comment.author.id}`} aria-label={`${comment.author.displayName}のプロフィール`}>
+        <Avatar user={comment.author} />
+      </Link>
       <div className="post-main">
         <div className="post-head">
-          <span className="name">{comment.author.displayName}</span>
-          <span className="handle">@{comment.author.username}</span>
+          <Link className="name" to={`/users/${comment.author.id}`}>
+            {comment.author.displayName}
+          </Link>
+          <Link className="handle" to={`/users/${comment.author.id}`}>
+            @{comment.author.username}
+          </Link>
           <span className="dot">·</span>
           <span className="time">{relativeTime(comment.createdAt)}</span>
           <span className="grow" />

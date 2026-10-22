@@ -178,3 +178,42 @@ textarea { font: inherit; color: inherit; }
   background: var(--surface); color: var(--primary); font-weight: 700;
 }
 .new-posts:hover { background: rgba(29, 155, 240, .1); }
+
+/* ---- タブ ---- */
+.tabs { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; overflow: hidden; }
+.tab {
+  flex: 1; text-align: center; padding: 11px 0; font-weight: 700;
+  color: var(--muted); border-bottom: 3px solid transparent;
+  background: none; border-top: none; border-left: none; border-right: none;
+}
+.tab:hover { background: var(--bg); }
+.tab.active { color: var(--text); border-bottom-color: var(--primary); }
+a.tab { display: block; }
+
+/* ---- プロフィール(S-05) ---- */
+.avatar.large { width: 84px; height: 84px; font-size: 34px; }
+.profile-top { padding: 16px; }
+.profile-row { display: flex; gap: 16px; align-items: center; }
+.profile-info { flex: 1; min-width: 0; }
+.profile-info h2 { margin: 0; font-size: 20px; }
+.profile-bio { margin: 12px 0 8px; white-space: pre-wrap; word-break: break-word; }
+.counts { display: flex; gap: 20px; margin-top: 6px; font-size: 14px; }
+.counts b { font-size: 16px; }
+.counts a:hover { text-decoration: underline; }
+.post-head a.name:hover { text-decoration: underline; }
+
+/* ---- ユーザー行(S-08) ---- */
+.user-row {
+  display: flex; gap: 12px; align-items: center;
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+}
+.user-row:last-child { border-bottom: none; }
+.user-row .info { flex: 1; min-width: 0; }
+.user-row .name { font-weight: 700; }
+.user-row .name:hover { text-decoration: underline; }
+.user-row .handle { color: var(--muted); font-size: 14px; }
+.user-row .bio { color: var(--muted); font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---- フォローボタン ---- */
+.follow-wrap { display: inline-flex; flex-direction: column; align-items: flex-end; flex: none; }
+.follow-wrap .form-error { margin: 4px 0 0; font-size: 12px; }
