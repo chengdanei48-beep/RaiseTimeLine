@@ -13,7 +13,7 @@ X(旧Twitter)のような、テキスト中心のタイムライン型 SNS で�
 
 - 個人や受講者が使う学習用アプリですが、**複数のユーザーが同時に使う前提**で設計します。第三者が他人の投稿にいいね・コメントできるため、投稿ごとに**いいね数・コメント数**を全ユーザーに表示します。
 - 画像は **AWS S3**(非公開バケット)に保存し、署名付き URL でブラウザから直接アップロード・表示します。
-- 現在は**設計フェーズ**です(`docs/` のみ。アプリのコードは未実装)。詳細な前提・制約は [要件定義書](docs/01-requirements.md) を参照してください。
+- 現在は**実装の途中**です。認証・投稿(テキスト)・コメント・いいね・フォロー・プロフィール表示・「フォロー中」「全体」のタイムラインは実装済みで、**投稿画像・プロフィール画像(S3)・ユーザー検索・プロフィール編集は未実装**です。詳細な前提・制約は [要件定義書](docs/01-requirements.md) を参照してください。
 
 ## 主な機能
 
@@ -54,7 +54,7 @@ X(旧Twitter)のような、テキスト中心のタイムライン型 SNS で�
 
 ## ディレクトリ構成
 
-現在は `docs/`・開発ルール・`backend/`(認証 API のみ実装済み)です。`frontend/` などは予定です。
+現在は `docs/`・開発ルール・`backend/`・`frontend/`・`mockup/`(プロトタイプ)です。`infra/` は予定です。
 
 ```
 RaiseTimeLine/
@@ -67,10 +67,11 @@ RaiseTimeLine/
 │  └─ 05-infrastructure.md    … AWS 構成図
 ├─ .claude/                   … Claude Code の設定とスキル(quality-review)
 ├─ CLAUDE.md                  … 開発ルール(Claude Code 向け)
-├─ backend/                   … バックエンド(Spring Boot + MyBatis)
+├─ backend/                   … バックエンド(Spring Boot + MyBatis。SQL は src/main/resources/mapper/*.xml)
+├─ frontend/                  … フロントエンド(React + Vite)
+├─ mockup/                    … 画面のプロトタイプ(ブラウザのメモリだけで動くモック。見た目・操作の参考)
 ├─ docker-compose.yml         … 開発用 PostgreSQL(raisetimeline-postgres、ポート 5433)
 ├─ .env.example               … 環境変数の雛形(.env にコピーして使う。.env は git 管理外)
-├─ frontend/ (予定)           … フロントエンド(React + Vite)
 └─ infra/terraform/ (予定)    … AWS 構築コード(構築すると決めた場合)
 ```
 
@@ -85,6 +86,17 @@ cd backend
 ```
 
 アプリは起動時にリポジトリ直下の `.env` を読みます(OS の環境変数が優先)。
+
+## フロントエンドの起動(開発)
+
+```powershell
+cd frontend
+npm install
+npm run dev                        # http://localhost:5173(/api は 8080 のバックエンドへ中継)
+npm run lint; npm run typecheck; npm run build
+```
+
+> テスト(`./mvnw verify`)は開発用と同じ DB を使い、ユーザーを全削除します。テスト後は、画面で使うユーザーを登録し直してください。
 
 ## ドキュメント
 
