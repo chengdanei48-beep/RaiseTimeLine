@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
-import { Link, useLocation, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate, useParams } from 'react-router'
+import { BackButton } from '../components/BackButton'
 import { createComment, fetchComments } from '../api/comments'
 import { ApiError, GENERIC_ERROR } from '../api/client'
 import { fetchPost } from '../api/posts'
@@ -16,7 +17,6 @@ type Status = 'loading' | 'ready' | 'notFound' | 'error'
 export function PostDetailPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
   const params = useParams()
   const postId = Number(params.id)
   const validId = Number.isSafeInteger(postId) && postId >= 1
@@ -110,15 +110,6 @@ export function PostDetailPage() {
     )
   }
 
-  /** 来た画面へ戻る。直接開いた(履歴がない)ときはホームへ */
-  function handleBack() {
-    if (location.key === 'default') {
-      navigate('/')
-    } else {
-      navigate(-1)
-    }
-  }
-
   if (user === null) {
     return null
   }
@@ -129,9 +120,7 @@ export function PostDetailPage() {
   return (
     <>
       <header className="topbar">
-        <button className="btn-text back" type="button" onClick={handleBack}>
-          ← 戻る
-        </button>
+        <BackButton />
         <h1>投稿</h1>
       </header>
 

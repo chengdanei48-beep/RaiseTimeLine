@@ -1,5 +1,5 @@
 import { authRequest } from './client'
-import type { Post, TimelinePage } from './types'
+import type { Post, TimelinePage, TimelineScope } from './types'
 
 export function createPost(body: string): Promise<Post> {
   return authRequest<Post>('/api/posts', 'POST', { body })
@@ -25,7 +25,7 @@ export function unlikePost(id: number): Promise<void> {
   return authRequest<void>(`/api/posts/${id}/like`, 'DELETE')
 }
 
-export function fetchTimeline(cursor: string | null): Promise<TimelinePage> {
-  const query = cursor === null ? '' : `?cursor=${encodeURIComponent(cursor)}`
-  return authRequest<TimelinePage>(`/api/timeline${query}`, 'GET')
+export function fetchTimeline(scope: TimelineScope, cursor: string | null): Promise<TimelinePage> {
+  const query = cursor === null ? '' : `&cursor=${encodeURIComponent(cursor)}`
+  return authRequest<TimelinePage>(`/api/timeline?scope=${scope}${query}`, 'GET')
 }
