@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { SubmitEvent } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useLocation, useNavigate, useParams } from 'react-router'
 import { createComment, fetchComments } from '../api/comments'
 import { ApiError, GENERIC_ERROR } from '../api/client'
 import { fetchPost } from '../api/posts'
@@ -16,6 +16,7 @@ type Status = 'loading' | 'ready' | 'notFound' | 'error'
 export function PostDetailPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const params = useParams()
   const postId = Number(params.id)
   const validId = Number.isSafeInteger(postId) && postId >= 1
@@ -109,6 +110,15 @@ export function PostDetailPage() {
     )
   }
 
+  /** 来た画面へ戻る。直接開いた(履歴がない)ときはホームへ */
+  function handleBack() {
+    if (location.key === 'default') {
+      navigate('/')
+    } else {
+      navigate(-1)
+    }
+  }
+
   if (user === null) {
     return null
   }
@@ -119,9 +129,9 @@ export function PostDetailPage() {
   return (
     <>
       <header className="topbar">
-        <Link className="btn-text back" to="/">
+        <button className="btn-text back" type="button" onClick={handleBack}>
           ← 戻る
-        </Link>
+        </button>
         <h1>投稿</h1>
       </header>
 
@@ -136,7 +146,7 @@ export function PostDetailPage() {
           <p className="empty">投稿が見つかりません</p>
           <div className="more">
             <Link className="btn btn-outline" to="/">
-              ホームへ戻る
+              タイムラインへ戻る
             </Link>
           </div>
         </section>
@@ -148,18 +158,19 @@ export function PostDetailPage() {
             <PostCard
               post={post}
               mine={post.author.id === user.id}
+              detail
               onChange={setPost}
               onDeleted={() => navigate('/')}
             />
           </section>
 
-          <section className="card" aria-label="コメント">
+          <section className="card" aria-label="コメントの入力">
             <form className="comment-form" onSubmit={handleSubmit} noValidate>
               <textarea
                 aria-label="コメント"
                 aria-invalid={submitError !== null ? true : undefined}
                 aria-describedby={submitError !== null ? 'comment-error' : undefined}
-                placeholder="コメントを入力 (280字)"
+                placeholder="コメントを入力(280字)"
                 value={body}
                 onChange={(e) => setBody(e.target.value)}
               />
@@ -175,7 +186,9 @@ export function PostDetailPage() {
                 </p>
               )}
             </form>
+          </section>
 
+          <section className="card" aria-label="コメント一覧">
             {comments.map((comment) => (
               <CommentItem
                 key={comment.id}

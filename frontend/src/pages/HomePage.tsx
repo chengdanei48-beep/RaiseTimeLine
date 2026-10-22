@@ -5,6 +5,7 @@ import type { Post } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { PostCard } from '../components/PostCard'
 import { PostEditorModal } from '../components/PostEditorModal'
+import { useToast } from '../components/ToastContext'
 
 /** 開いている投稿モーダル。作成か、編集する投稿 */
 type Editor = { kind: 'create' } | { kind: 'edit'; post: Post }
@@ -18,6 +19,7 @@ const PAGE_SIZE = 20
 /** S-03 タイムライン(全体。画像・フォロー中タブは後続) */
 export function HomePage() {
   const { user, logout } = useAuth()
+  const showToast = useToast()
   const [loggingOut, setLoggingOut] = useState(false)
   const [posts, setPosts] = useState<Post[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
@@ -168,6 +170,7 @@ export function HomePage() {
     const post = await createPost(body)
     setPosts((current) => [post, ...current])
     setEditor(null)
+    showToast('投稿しました')
   }
 
   async function handleEdit(target: Post, body: string) {
