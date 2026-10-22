@@ -15,4 +15,17 @@
     SELECT * FROM users WHERE id = #{id}
   </select>
 
+  <!-- プロフィール。件数は削除済みの投稿を除いて数え、viewerId がフォロー済みかを添える。 -->
+  <select id="findProfile" resultType="com.raisetimeline.entity.UserProfile">
+    SELECT u.id, u.username, u.display_name, u.bio,
+           (SELECT COUNT(*) FROM posts p WHERE p.user_id = u.id AND p.deleted_at IS NULL)
+             AS post_count,
+           (SELECT COUNT(*) FROM follows f WHERE f.follower_id = u.id) AS following_count,
+           (SELECT COUNT(*) FROM follows f WHERE f.followee_id = u.id) AS follower_count,
+           EXISTS (SELECT 1 FROM follows f
+                   WHERE f.follower_id = #{viewerId} AND f.followee_id = u.id) AS followed_by_me
+    FROM users u
+    WHERE u.id = #{id}
+  </select>
+
 </mapper>

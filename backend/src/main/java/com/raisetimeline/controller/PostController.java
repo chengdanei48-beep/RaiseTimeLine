@@ -61,9 +61,10 @@ public class PostController {
   @GetMapping("/timeline")
   public TimelineResponse timeline(
       @AuthenticationPrincipal Jwt jwt,
+      @RequestParam(required = false) String scope,
       @RequestParam(required = false) String cursor,
       @RequestParam(required = false) Integer limit) {
-    return postService.timeline(userId(jwt), cursor, limit);
+    return postService.timeline(userId(jwt), scope, cursor, limit);
   }
 
   private static long userId(Jwt jwt) {

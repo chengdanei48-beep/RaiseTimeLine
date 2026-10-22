@@ -22,12 +22,32 @@
     UPDATE posts SET deleted_at = now() WHERE id = #{id} AND deleted_at IS NULL
   </update>
 
-  <!-- 新しい順。cursorCreatedAt が null なら先頭から。 -->
+  <!--
+    新しい順。cursorCreatedAt が null なら先頭から。
+    followingOnly なら、viewerId 自身とフォロー中のユーザーの投稿だけ。
+  -->
   <select id="findTimeline" resultType="com.raisetimeline.entity.Post">
     SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
            u.username AS author_username, u.display_name AS author_display_name
     FROM posts p JOIN users u ON u.id = p.user_id
     WHERE p.deleted_at IS NULL
+    <if test="followingOnly">
+      AND (p.user_id = #{viewerId}
+           OR p.user_id IN (SELECT followee_id FROM follows WHERE follower_id = #{viewerId}))
+    </if>
+    <if test="cursorCreatedAt != null">
+      AND (p.created_at, p.id) &lt; (#{cursorCreatedAt}, #{cursorId})
+    </if>
+    ORDER BY p.created_at DESC, p.id DESC
+    LIMIT #{limit}
+  </select>
+
+  <!-- 特定ユーザーの投稿。新しい順。cursorCreatedAt が null なら先頭から。 -->
+  <select id="findByUser" resultType="com.raisetimeline.entity.Post">
+    SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
+           u.username AS author_username, u.display_name AS author_display_name
+    FROM posts p JOIN users u ON u.id = p.user_id
+    WHERE p.user_id = #{userId} AND p.deleted_at IS NULL
     <if test="cursorCreatedAt != null">
       AND (p.created_at, p.id) &lt; (#{cursorCreatedAt}, #{cursorId})
     </if>
