@@ -40,8 +40,8 @@ public class PostController {
   }
 
   @GetMapping("/posts/{id}")
-  public PostResponse get(@PathVariable long id) {
-    return postService.get(id);
+  public PostResponse get(@AuthenticationPrincipal Jwt jwt, @PathVariable long id) {
+    return postService.get(userId(jwt), id);
   }
 
   @PatchMapping("/posts/{id}")
@@ -60,9 +60,10 @@ public class PostController {
 
   @GetMapping("/timeline")
   public TimelineResponse timeline(
+      @AuthenticationPrincipal Jwt jwt,
       @RequestParam(required = false) String cursor,
       @RequestParam(required = false) Integer limit) {
-    return postService.timeline(cursor, limit);
+    return postService.timeline(userId(jwt), cursor, limit);
   }
 
   private static long userId(Jwt jwt) {

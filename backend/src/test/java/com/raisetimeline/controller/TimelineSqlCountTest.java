@@ -65,7 +65,15 @@ class TimelineSqlCountTest {
 
   private void insertPosts(int count) {
     for (int i = 0; i < count; i++) {
-      jdbcTemplate.update("INSERT INTO posts (user_id, body) VALUES (?, ?)", userId, "投稿" + i);
+      Long postId =
+          jdbcTemplate.queryForObject(
+              "INSERT INTO posts (user_id, body) VALUES (?, ?) RETURNING id",
+              Long.class,
+              userId,
+              "投稿" + i);
+      jdbcTemplate.update("INSERT INTO likes (user_id, post_id) VALUES (?, ?)", userId, postId);
+      jdbcTemplate.update(
+          "INSERT INTO comments (post_id, user_id, body) VALUES (?, ?, ?)", postId, userId, "c");
     }
   }
 
