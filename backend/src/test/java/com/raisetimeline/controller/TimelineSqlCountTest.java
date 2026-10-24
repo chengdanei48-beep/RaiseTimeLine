@@ -80,6 +80,18 @@ class TimelineSqlCountTest {
   }
 
   @Test
+  void ユーザー検索のSQL発行数は結果の人数に依らず一定で上限以下() throws Exception {
+    insertFollowers(3);
+    int withFew = sqlCountOf("/api/users?q=f&limit=3", 3);
+
+    insertFollowers(20);
+    int withMany = sqlCountOf("/api/users?q=f&limit=20", 20);
+
+    assertThat(withMany).as("3人取得: %d / 20人取得: %d", withFew, withMany).isEqualTo(withFew);
+    assertThat(withMany).isLessThanOrEqualTo(MAX_SQL_PER_PAGE);
+  }
+
+  @Test
   void フォロー中タイムラインのSQL発行数は投稿数に依らず一定で上限以下() throws Exception {
     insertPosts(5);
     int withFew = sqlCountOf("/api/timeline?scope=following&limit=5", 5);

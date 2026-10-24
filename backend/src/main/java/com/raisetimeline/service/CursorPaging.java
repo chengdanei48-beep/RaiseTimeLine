@@ -43,6 +43,33 @@ final class CursorPaging {
     }
   }
 
+  /** 文字列キー(並び順の値)と ID で位置を表すカーソル。キーに `:` を含まないこと(ユーザーIDは含まない)。 */
+  record KeyPosition(String key, long id) {}
+
+  /** cursor が未指定なら null。 */
+  static KeyPosition decodeKey(String cursor) {
+    if (cursor == null || cursor.isEmpty()) {
+      return null;
+    }
+    try {
+      String raw = new String(Base64.getUrlDecoder().decode(cursor), StandardCharsets.UTF_8);
+      int i = raw.lastIndexOf(':');
+      if (i < 1) {
+        throw new InvalidRequestException(INVALID_CURSOR);
+      }
+      return new KeyPosition(raw.substring(0, i), Long.parseLong(raw.substring(i + 1)));
+    } catch (RuntimeException e) {
+      throw new InvalidRequestException(INVALID_CURSOR);
+    }
+  }
+
+  /** 不透明な文字列。中身は「キー:ID」。 */
+  static String encodeKey(String key, long id) {
+    return Base64.getUrlEncoder()
+        .withoutPadding()
+        .encodeToString((key + ":" + id).getBytes(StandardCharsets.UTF_8));
+  }
+
   /** 不透明な文字列。中身は「作成日時_ID」。 */
   static String encode(Instant createdAt, long id) {
     String raw = createdAt + "_" + id;
