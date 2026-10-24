@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { ApiError, GENERIC_ERROR } from '../api/client'
 import { createPost, fetchTimeline, updatePost } from '../api/posts'
+import { uploadImages } from '../api/uploads'
 import type { Post, TimelineScope } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
 import { PostCard } from '../components/PostCard'
@@ -180,8 +181,10 @@ export function HomePage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  async function handleCreate(body: string) {
-    const post = await createPost(body)
+  async function handleCreate(body: string, files: File[]) {
+    // 画像は先に S3 へ直接アップロードし、そのキーで投稿を作る(アップロードに失敗したら投稿は作られない)
+    const imageKeys = await uploadImages('POST', files)
+    const post = await createPost(body, imageKeys)
     setPosts((current) => [post, ...current])
     setEditor(null)
     showToast('投稿しました')
@@ -297,6 +300,7 @@ export function HomePage() {
           user={user}
           title="投稿を作成"
           submitLabel="投稿する"
+          allowImages
           onSubmit={handleCreate}
           onClose={() => setEditor(null)}
         />

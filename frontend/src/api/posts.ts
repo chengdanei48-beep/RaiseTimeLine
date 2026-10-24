@@ -1,8 +1,9 @@
 import { authRequest } from './client'
 import type { Post, TimelinePage, TimelineScope } from './types'
 
-export function createPost(body: string): Promise<Post> {
-  return authRequest<Post>('/api/posts', 'POST', { body })
+/** imageKeys は、署名付き URL でアップロード済みの画像のキー(最大4件。先頭が1枚目)。 */
+export function createPost(body: string, imageKeys: string[] = []): Promise<Post> {
+  return authRequest<Post>('/api/posts', 'POST', { body, imageKeys })
 }
 
 export function updatePost(id: number, body: string): Promise<Post> {

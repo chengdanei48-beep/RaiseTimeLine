@@ -5,6 +5,7 @@ import { deletePost, likePost, unlikePost } from '../api/posts'
 import type { Post } from '../api/types'
 import { relativeTime } from '../relativeTime'
 import { Avatar } from './Avatar'
+import { PostImages } from './PostImages'
 import { useToast } from './ToastContext'
 
 interface PostCardProps {
@@ -120,6 +121,7 @@ export function PostCard({ post, mine, detail = false, onEdit, onChange, onDelet
         </div>
 
         <div className="post-body">{post.body}</div>
+        {post.images.length > 0 && <PostImages images={post.images} />}
 
         <div className="post-actions">
           <Link className="action" to={`/posts/${post.id}`} aria-label={`コメント ${post.commentCount}件`}>
