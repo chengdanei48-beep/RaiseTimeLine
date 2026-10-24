@@ -49,3 +49,15 @@ export function validatePostBody(value: string): string | null {
   }
   return body.length <= POST_MAX_LENGTH ? null : '本文は1〜280文字で入力してください'
 }
+
+/** ユーザー検索の検索語の最大文字数 */
+export const SEARCH_MAX_LENGTH = 50
+
+/** 検索語を整える(サーバーと同じ。前後の空白と先頭の @ を取り除く)。 */
+export function normalizeSearchKeyword(value: string): string {
+  let keyword = value.trim()
+  while (keyword.startsWith('@')) {
+    keyword = keyword.slice(1).trim()
+  }
+  return keyword
+}

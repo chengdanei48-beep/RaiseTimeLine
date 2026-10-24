@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
 import { Avatar } from './Avatar'
 
-/** 共通ヘッダー(ログイン後の全画面)。アプリ名(→ホーム)・自分のプロフィールへのリンク・ログアウト。 */
+/** 共通ヘッダー(ログイン後の全画面)。アプリ名(→ホーム)・検索(→S-07)・自分のプロフィールへのリンク・ログアウト。 */
 export function AppHeader() {
   const { user, logout } = useAuth()
   const [loggingOut, setLoggingOut] = useState(false)
@@ -28,7 +28,9 @@ export function AppHeader() {
         <Link className="logo" to="/">
           RaiseTimeLine
         </Link>
-        <span className="grow" />
+        <Link className="header-search" to="/search">
+          <span aria-hidden="true">🔍</span> ユーザーを検索
+        </Link>
         <Link className="header-me" to={`/users/${user.id}`} aria-label="自分のプロフィール">
           <Avatar user={user} size="sm" />
           <span className="name">{user.displayName}</span>
