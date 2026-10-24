@@ -26,7 +26,7 @@ public class AuthService {
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
-  private final AvatarUrls avatarUrls;
+  private final ImageUrls imageUrls;
 
   /** 存在しないユーザーでも照合に同程度の時間をかけ、応答時間でIDの有無が分からないようにする。 */
   private final String dummyHash;
@@ -36,12 +36,12 @@ public class AuthService {
       PasswordEncoder passwordEncoder,
       JwtService jwtService,
       RefreshTokenService refreshTokenService,
-      AvatarUrls avatarUrls) {
+      ImageUrls imageUrls) {
     this.userMapper = userMapper;
     this.passwordEncoder = passwordEncoder;
     this.jwtService = jwtService;
     this.refreshTokenService = refreshTokenService;
-    this.avatarUrls = avatarUrls;
+    this.imageUrls = imageUrls;
     this.dummyHash = passwordEncoder.encode(UUID.randomUUID().toString());
   }
 
@@ -103,6 +103,6 @@ public class AuthService {
   }
 
   private UserResponse userResponse(User user) {
-    return UserResponse.from(user, avatarUrls.urlOf(user.getAvatarKey()));
+    return UserResponse.from(user, imageUrls.urlOf(user.getAvatarKey()));
   }
 }

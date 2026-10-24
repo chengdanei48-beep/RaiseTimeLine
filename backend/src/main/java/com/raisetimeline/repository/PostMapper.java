@@ -13,6 +13,12 @@ public interface PostMapper {
 
   void insert(Post post);
 
+  /** 投稿の画像を追加する。sortOrder は 0〜3(表示順)。 */
+  void insertImage(
+      @Param("postId") long postId,
+      @Param("objectKey") String objectKey,
+      @Param("sortOrder") int sortOrder);
+
   /** 削除済みは見つからない扱い。 */
   Optional<Post> findById(@Param("id") long id);
 

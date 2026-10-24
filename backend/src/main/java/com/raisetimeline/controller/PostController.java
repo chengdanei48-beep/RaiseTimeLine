@@ -35,7 +35,7 @@ public class PostController {
   @PostMapping("/posts")
   public ResponseEntity<PostResponse> create(
       @AuthenticationPrincipal Jwt jwt, @Valid @RequestBody CreatePostRequest request) {
-    PostResponse created = postService.create(userId(jwt), request.body());
+    PostResponse created = postService.create(userId(jwt), request.body(), request.imageKeys());
     return ResponseEntity.created(URI.create("/api/posts/" + created.id())).body(created);
   }
 

@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import com.raisetimeline.support.FakeStorageConfig;
 import com.raisetimeline.support.PostgresTestContainer;
 import com.raisetimeline.support.SqlCountConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,7 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @ImportTestcontainers(PostgresTestContainer.class)
 @SpringBootTest(properties = "app.jwt.secret=test-secret-test-secret-test-secret-0123456789")
 @AutoConfigureMockMvc
-@Import(SqlCountConfig.class)
+@Import({SqlCountConfig.class, FakeStorageConfig.class})
 class TimelineSqlCountTest {
 
   /** 1 ページの取得で許容する SQL の上限。機能追加で増やすときは根拠を残す。 */
@@ -127,6 +128,14 @@ class TimelineSqlCountTest {
       jdbcTemplate.update("INSERT INTO likes (user_id, post_id) VALUES (?, ?)", userId, postId);
       jdbcTemplate.update(
           "INSERT INTO comments (post_id, user_id, body) VALUES (?, ?, ?)", postId, userId, "c");
+      // 画像も投稿ごとに複数枚(取得は投稿 ID 群に対して 1 クエリ)
+      for (int order = 0; order < 3; order++) {
+        jdbcTemplate.update(
+            "INSERT INTO post_images (post_id, object_key, sort_order) VALUES (?, ?, ?)",
+            postId,
+            "posts/" + userId + "/img-" + postId + "-" + order + ".png",
+            order);
+      }
     }
   }
 

@@ -1,6 +1,7 @@
 package com.raisetimeline.service;
 
 import com.raisetimeline.dto.PostResponse;
+import com.raisetimeline.dto.PresignRequest.Purpose;
 import com.raisetimeline.dto.TimelineResponse;
 import com.raisetimeline.entity.Post;
 import com.raisetimeline.exception.ForbiddenException;
@@ -9,6 +10,7 @@ import com.raisetimeline.exception.PostNotFoundException;
 import com.raisetimeline.exception.UserNotFoundException;
 import com.raisetimeline.repository.PostMapper;
 import com.raisetimeline.repository.UserMapper;
+import java.util.HashSet;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,22 +19,43 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class PostService {
 
+  /** 1 つの投稿に付けられる画像の最大枚数。 */
+  public static final int MAX_IMAGES = 4;
+
   private final PostMapper postMapper;
   private final PostCardAssembler assembler;
   private final UserMapper userMapper;
+  private final UploadService uploadService;
 
-  public PostService(PostMapper postMapper, PostCardAssembler assembler, UserMapper userMapper) {
+  public PostService(
+      PostMapper postMapper,
+      PostCardAssembler assembler,
+      UserMapper userMapper,
+      UploadService uploadService) {
     this.postMapper = postMapper;
     this.assembler = assembler;
     this.userMapper = userMapper;
+    this.uploadService = uploadService;
   }
 
   @Transactional
-  public PostResponse create(long userId, String body) {
+  public PostResponse create(long userId, String body, List<String> imageKeys) {
+    // 画像は、自分がアップロード済みのものだけ(重複なし)。先に確かめてから、投稿と画像を同じトランザクションで保存する
+    if (imageKeys.size() > MAX_IMAGES) {
+      throw new InvalidRequestException("画像は" + MAX_IMAGES + "枚までです");
+    }
+    if (new HashSet<>(imageKeys).size() != imageKeys.size()) {
+      throw new InvalidRequestException("同じ画像は複数指定できません");
+    }
+    imageKeys.forEach(key -> uploadService.verifyUploaded(userId, Purpose.POST, key));
+
     Post post = new Post();
     post.setUserId(userId);
     post.setBody(body);
     postMapper.insert(post);
+    for (int i = 0; i < imageKeys.size(); i++) {
+      postMapper.insertImage(post.getId(), imageKeys.get(i), i);
+    }
     return assembler.assembleOne(find(post.getId()), userId);
   }
 

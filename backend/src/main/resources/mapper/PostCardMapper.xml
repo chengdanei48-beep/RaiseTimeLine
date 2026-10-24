@@ -29,4 +29,13 @@
       <foreach collection="postIds" item="id" open="(" separator="," close=")">#{id}</foreach>
   </select>
 
+  <!-- 画像は投稿 ID 群に対して 1 クエリで取得する。表示順(sort_order)の昇順。 -->
+  <select id="findImagesByPostIds" resultType="com.raisetimeline.entity.PostImage">
+    SELECT post_id, object_key, sort_order
+    FROM post_images
+    WHERE post_id IN
+      <foreach collection="postIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+    ORDER BY post_id, sort_order
+  </select>
+
 </mapper>

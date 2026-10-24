@@ -18,12 +18,12 @@ public class CommentService {
 
   private final CommentMapper commentMapper;
   private final PostMapper postMapper;
-  private final AvatarUrls avatarUrls;
+  private final ImageUrls imageUrls;
 
-  public CommentService(CommentMapper commentMapper, PostMapper postMapper, AvatarUrls avatarUrls) {
+  public CommentService(CommentMapper commentMapper, PostMapper postMapper, ImageUrls imageUrls) {
     this.commentMapper = commentMapper;
     this.postMapper = postMapper;
-    this.avatarUrls = avatarUrls;
+    this.imageUrls = imageUrls;
   }
 
   @Transactional
@@ -76,6 +76,6 @@ public class CommentService {
   }
 
   private CommentResponse toResponse(Comment comment) {
-    return CommentResponse.from(comment, avatarUrls.urlOf(comment.getAuthorAvatarKey()));
+    return CommentResponse.from(comment, imageUrls.urlOf(comment.getAuthorAvatarKey()));
   }
 }
