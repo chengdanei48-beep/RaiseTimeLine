@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router'
 import { ApiError, GENERIC_ERROR } from '../api/client'
 import { createPost, fetchTimeline, updatePost } from '../api/posts'
 import type { Post, TimelineScope } from '../api/types'
@@ -264,9 +265,15 @@ export function HomePage() {
         ))}
         {!loading && error === null && posts.length === 0 && (
           <p className="empty">
-            {scope === 'following'
-              ? 'まだ投稿がありません。「全体」で気になる人を見つけて、フォローしてみましょう'
-              : 'まだ投稿がありません。最初の投稿をしてみましょう'}
+            {scope === 'following' ? (
+              <>
+                まだ投稿がありません。ユーザーを検索してフォローしてみましょう
+                <br />
+                <Link to="/search">ユーザーを検索する</Link>
+              </>
+            ) : (
+              'まだ投稿がありません。最初の投稿をしてみましょう'
+            )}
           </p>
         )}
         {error !== null && (

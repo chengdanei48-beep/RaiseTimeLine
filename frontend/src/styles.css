@@ -169,6 +169,7 @@ textarea { font: inherit; color: inherit; }
 .btn-danger:hover { background: #b81d4c; }
 
 .empty { text-align: center; color: var(--muted); padding: 24px 16px; margin: 0; }
+.empty a { color: var(--primary); font-weight: 600; }
 .more { text-align: center; padding: 12px; }
 
 .new-posts {
@@ -235,3 +236,19 @@ a.tab { display: block; }
 .header-me .name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
 .avatar.sm { width: 28px; height: 28px; font-size: 13px; }
 .btn-compact { padding: 5px 12px; }
+.header-search {
+  flex: 1; min-width: 0;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 999px; padding: 6px 14px;
+  color: var(--muted); font-size: 14px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.header-search:hover { border-color: var(--primary); }
+
+/* ---- ユーザー検索(S-07) ---- */
+.search-box { display: flex; gap: 8px; padding: 12px; }
+.search-box input {
+  flex: 1; min-width: 0; padding: 9px 16px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 999px;
+}
+.search-box input:focus { outline: 2px solid var(--primary); outline-offset: -1px; }

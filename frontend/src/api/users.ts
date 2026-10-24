@@ -28,3 +28,8 @@ export function fetchFollowing(id: number, cursor: string | null): Promise<Follo
 export function fetchFollowers(id: number, cursor: string | null): Promise<FollowUserPage> {
   return authRequest<FollowUserPage>(`/api/users/${id}/followers${cursorQuery(cursor)}`, 'GET')
 }
+
+export function searchUsers(q: string, cursor: string | null): Promise<FollowUserPage> {
+  const cursorPart = cursor === null ? '' : `&cursor=${encodeURIComponent(cursor)}`
+  return authRequest<FollowUserPage>(`/api/users?q=${encodeURIComponent(q)}${cursorPart}`, 'GET')
+}
