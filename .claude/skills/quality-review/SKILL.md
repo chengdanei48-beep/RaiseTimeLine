@@ -41,7 +41,7 @@ cd infra/terraform && terraform plan -input=false -out tfplan   # 要 aws sso lo
 - 静的解析: `cd infra/terraform && tflint --init && tflint`(設定は `.tflint.hcl`)、`trivy config infra/terraform --severity MEDIUM,HIGH,CRITICAL`。未導入なら、その旨を報告し、下の観点を目視で点検する(ツールはシステムに入れず、リリースの zip を一時フォルダに展開すれば使える)。
 - 指摘は、まず直す。意図した設定は、`.tf` に `#trivy:ignore:AWS-xxxx` と **理由のコメント** を書いて除外する(誤検知・費用・運用方針による)。理由なしの除外は不可。
 - PowerShell スクリプト: `Invoke-ScriptAnalyzer -Path scripts -Settings scripts/PSScriptAnalyzerSettings.psd1`(Windows PowerShell 5.1 向け。`Write-Host` と `Confirm-Yes` の誤検知は設定で除外済み)。
-- CI(`.github/workflows/ci.yml`)にも同じものがある: `terraform` ジョブ(`fmt -check` / `init -backend=false` / `validate` / TFLint / Trivy)と `powershell` ジョブ(PSScriptAnalyzer)。AWS の認証を使わないため、`plan` は含まない(`plan` はローカルで実行して確認する)。
+- CI(`.github/workflows/ci.yml`)には現在 `backend` / `frontend` ジョブのみ。インフラ(`infra/terraform/`・`scripts/`)を作るときに、`terraform` ジョブ(`fmt -check` / `init -backend=false` / `validate` / TFLint / Trivy)と `powershell` ジョブ(PSScriptAnalyzer)を同じ PR で追加する。AWS の認証を使わないため、`plan` は含めない(`plan` はローカルで実行して確認する)。
 
 ## 観点チェックリスト
 

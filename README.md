@@ -172,6 +172,8 @@ cd frontend && npm run typecheck # 型チェック
 cd frontend && npm run build     # 型チェック + ビルド
 ```
 
+同じチェックを GitHub Actions(`.github/workflows/ci.yml`)が、PR と main への push のたびに自動で実行します(`backend` / `frontend` の 2 ジョブ)。
+
 品質レビューの観点は `.claude/skills/quality-review/SKILL.md`(Claude Code のスキル `quality-review`)にまとめています。
 
 ## API
