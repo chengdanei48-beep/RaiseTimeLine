@@ -15,6 +15,24 @@
     SELECT * FROM users WHERE id = #{id}
   </select>
 
+  <!--
+    ユーザー検索。pattern は LIKE のエスケープ済みで、前後に % を付けたもの(エスケープ文字は \)。
+    自分(viewerId)は除く。lower(username) 昇順、同じなら id 昇順。
+    cursorKey が null なら先頭から。
+  -->
+  <select id="searchUsers" resultType="com.raisetimeline.entity.FollowUser">
+    SELECT u.id, u.username, u.display_name, u.bio
+    FROM users u
+    WHERE u.id &lt;&gt; #{viewerId}
+      AND (lower(u.username) LIKE lower(#{pattern}) ESCAPE '\'
+           OR lower(u.display_name) LIKE lower(#{pattern}) ESCAPE '\')
+    <if test="cursorKey != null">
+      AND (lower(u.username), u.id) &gt; (#{cursorKey}, #{cursorId})
+    </if>
+    ORDER BY lower(u.username), u.id
+    LIMIT #{limit}
+  </select>
+
   <!-- プロフィール。件数は削除済みの投稿を除いて数え、viewerId がフォロー済みかを添える。 -->
   <select id="findProfile" resultType="com.raisetimeline.entity.UserProfile">
     SELECT u.id, u.username, u.display_name, u.bio,
