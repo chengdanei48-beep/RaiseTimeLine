@@ -18,9 +18,8 @@ const PAGE_SIZE = 20
 
 /** S-03 タイムライン(「フォロー中」「全体」のタブ。画像は後続) */
 export function HomePage() {
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const showToast = useToast()
-  const [loggingOut, setLoggingOut] = useState(false)
   const [posts, setPosts] = useState<Post[]>([])
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -150,16 +149,6 @@ export function HomePage() {
     setScope(next)
   }
 
-  async function handleLogout() {
-    setLoggingOut(true)
-    try {
-      // 成功・失敗にかかわらずログアウト状態になり、RequireAuth が S-02 へ移動させる
-      await logout()
-    } catch {
-      // サーバーへの通知に失敗してもブラウザ側のトークンは破棄済み
-    }
-  }
-
   async function showNewPosts() {
     if (newPosts.length >= PAGE_SIZE) {
       // 新着が 1 ページに収まらず、取れていない分が出る。先頭から取得し直して置き換える
@@ -225,12 +214,6 @@ export function HomePage() {
         <span className="grow" />
         <button className="btn" type="button" onClick={() => setEditor({ kind: 'create' })}>
           投稿する
-        </button>
-        <span className="muted">
-          {user.displayName}(@{user.username})
-        </span>
-        <button className="btn btn-outline" type="button" onClick={handleLogout} disabled={loggingOut}>
-          ログアウト
         </button>
       </header>
 

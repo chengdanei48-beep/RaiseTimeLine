@@ -127,7 +127,7 @@ function ProfileView({ userId }: { userId: number }) {
         <>
           <section className="card profile-top" aria-label="プロフィール">
             <div className="profile-row">
-              <Avatar user={profile} large />
+              <Avatar user={profile} size="lg" />
               <div className="profile-info">
                 <h2>{profile.displayName}</h2>
                 <span className="muted">@{profile.username}</span>
