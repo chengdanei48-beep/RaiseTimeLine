@@ -79,3 +79,14 @@ export function validateAvatarFile(file: File): string | null {
   }
   return file.size <= AVATAR_MAX_BYTES ? null : '画像は 2MB 以下にしてください'
 }
+
+export const POST_IMAGE_MAX_COUNT = 4
+export const POST_IMAGE_MAX_BYTES = 5 * 1024 * 1024
+
+/** 投稿画像(JPEG/PNG/GIF/WebP、5MB以下)。サーバーでも同じ検証をする。 */
+export function validatePostImageFile(file: File): string | null {
+  if (!AVATAR_TYPES.includes(file.type)) {
+    return `${file.name}: 画像は JPEG・PNG・GIF・WebP のいずれかにしてください`
+  }
+  return file.size <= POST_IMAGE_MAX_BYTES ? null : `${file.name}: 画像は 5MB 以下にしてください`
+}

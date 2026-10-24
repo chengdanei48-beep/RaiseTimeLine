@@ -28,3 +28,14 @@ export async function putToStorage(presign: Presign, file: File): Promise<void> 
     throw new ApiError(res.status, '画像のアップロードに失敗しました')
   }
 }
+
+/** 画像を順番に署名付き URL へアップロードし、オブジェクトキーを(渡した順に)返す。1 枚でも失敗したら例外。 */
+export async function uploadImages(purpose: UploadPurpose, files: File[]): Promise<string[]> {
+  const keys: string[] = []
+  for (const file of files) {
+    const presign = await presignUpload(purpose, file.type, file.size)
+    await putToStorage(presign, file)
+    keys.push(presign.objectKey)
+  }
+  return keys
+}

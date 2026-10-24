@@ -24,12 +24,19 @@ export interface LoginInput {
   password: string
 }
 
+/** 投稿の画像。url は表示用の署名付き URL(期限つき)、sortOrder は 0〜3(表示順)。 */
+export interface PostImage {
+  url: string
+  sortOrder: number
+}
+
 export interface Post {
   id: number
   body: string
   createdAt: string
   updatedAt: string
   author: User
+  images: PostImage[]
   likeCount: number
   commentCount: number
   likedByMe: boolean
