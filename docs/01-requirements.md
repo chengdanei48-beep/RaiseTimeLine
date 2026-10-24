@@ -222,7 +222,8 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 | PUT | `/api/posts/{id}/like` | いいね(冪等) | 204 | F-LIKE |
 | DELETE | `/api/posts/{id}/like` | いいね取り消し(冪等) | 204 | F-LIKE |
 | GET | `/api/users` | ユーザー検索。`q`、`cursor`、`limit` | 200 | F-SEARCH |
-| GET | `/api/users/{id}` | プロフィール(フォロー数・フォロワー数・フォロー済みを含む) | 200 | F-PROF |
+| GET | `/api/users/{id}` | プロフィール(フォロー数・フォロワー数・フォロー済みを含む)。`me` は使えない(自分は `GET /api/users/me`) | 200 | F-PROF |
+| GET | `/api/users/me` | 自分のプロフィール(`GET /api/users/{id}` と同じ形式) | 200 | F-PROF |
 | PUT | `/api/users/me` | プロフィール更新(`displayName`、`bio`、`avatarKey`) | 200 | F-PROF |
 | GET | `/api/users/{id}/posts` | そのユーザーの投稿一覧 | 200 | F-PROF |
 | PUT | `/api/users/{id}/follow` | フォロー(冪等) | 204 | F-FOLLOW |
@@ -241,6 +242,7 @@ HTTP ステータスと `detail`(メッセージ)を含む JSON(RFC 9457 の Pro
 | 403 | 権限なし(他人の投稿の削除など) |
 | 404 | 対象が存在しない(削除済みの投稿を含む) |
 | 409 | 競合(ユーザーIDの重複) |
+| 429 | 短時間に操作が多すぎる(署名付き URL の発行は、1 ユーザーあたり 1 分に 30 回まで)。`Retry-After`(秒)で、やり直せるまでの時間を返す |
 
 ---
 

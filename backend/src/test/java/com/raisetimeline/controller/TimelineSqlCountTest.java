@@ -2,13 +2,13 @@ package com.raisetimeline.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
 import com.raisetimeline.support.FakeStorageConfig;
 import com.raisetimeline.support.PostgresTestContainer;
 import com.raisetimeline.support.SqlCountConfig;
+import com.raisetimeline.support.TestUsers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +16,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -40,18 +39,8 @@ class TimelineSqlCountTest {
   @BeforeEach
   void setUp() throws Exception {
     jdbcTemplate.update("DELETE FROM users");
-    String response =
-        mockMvc
-            .perform(
-                post("/api/auth/register")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(
-                        "{\"username\":\"alice\",\"displayName\":\"アリス\",\"password\":\"password123\"}"))
-            .andExpect(status().isCreated())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-    token = JsonPath.read(response, "$.accessToken");
+    String response = TestUsers.register(mockMvc, "alice", "アリス");
+    token = TestUsers.accessToken(response);
     userId =
         jdbcTemplate.queryForObject("SELECT id FROM users WHERE username = 'alice'", Long.class);
   }

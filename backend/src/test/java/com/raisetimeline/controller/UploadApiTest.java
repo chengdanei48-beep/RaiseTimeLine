@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import com.raisetimeline.support.FakeStorageConfig;
 import com.raisetimeline.support.PostgresTestContainer;
+import com.raisetimeline.support.TestUsers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,18 +40,9 @@ class UploadApiTest {
   @BeforeEach
   void setUp() throws Exception {
     jdbcTemplate.update("DELETE FROM users");
-    String response =
-        mockMvc
-            .perform(
-                post("/api/auth/register")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(
-                        "{\"username\":\"alice\",\"displayName\":\"alice\",\"password\":\"password123\"}"))
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-    token = JsonPath.read(response, "$.accessToken");
-    userId = JsonPath.<Number>read(response, "$.user.id").longValue();
+    String response = TestUsers.register(mockMvc, "alice");
+    token = TestUsers.accessToken(response);
+    userId = TestUsers.userId(response);
   }
 
   @Test

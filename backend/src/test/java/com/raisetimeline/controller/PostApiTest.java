@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import com.raisetimeline.support.PostgresTestContainer;
+import com.raisetimeline.support.TestUsers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,8 +40,8 @@ class PostApiTest {
   @BeforeEach
   void setUp() throws Exception {
     jdbcTemplate.update("DELETE FROM users");
-    alice = registerAndGetToken("alice", "アリス");
-    bob = registerAndGetToken("bob", "ボブ");
+    alice = TestUsers.registerAndGetToken(mockMvc, "alice", "アリス");
+    bob = TestUsers.registerAndGetToken(mockMvc, "bob", "ボブ");
   }
 
   // ---- 作成 ----
@@ -302,25 +303,6 @@ class PostApiTest {
         .andReturn()
         .getResponse()
         .getContentAsString();
-  }
-
-  private String registerAndGetToken(String username, String displayName) throws Exception {
-    String response =
-        mockMvc
-            .perform(
-                post("/api/auth/register")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(
-                        "{\"username\":\""
-                            + username
-                            + "\",\"displayName\":\""
-                            + displayName
-                            + "\",\"password\":\"password123\"}"))
-            .andExpect(status().isCreated())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-    return JsonPath.read(response, "$.accessToken");
   }
 
   /** JSON 文字列リテラルへのエスケープ(改行・タブ・引用符のみ対応すれば足りる)。 */

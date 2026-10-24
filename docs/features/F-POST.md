@@ -21,7 +21,7 @@
 | contentType | ○ | `image/jpeg` / `image/png` / `image/gif` / `image/webp` のいずれか |
 | size | ○ | バイト数。`POST` は 5MB 以下、`AVATAR` は 2MB 以下(BR-02, BR-09) |
 
-応答: `{ "uploadUrl": "署名付きPUT URL", "objectKey": "posts/7/3f2a….jpg", "expiresIn": 300, "requiredHeaders": { "Content-Type": "image/jpeg" } }`。`objectKey` は サーバーが `purpose/{userId}/{uuid}.{拡張子}` で生成する(クライアントはキーを決められない)。署名付きURLの有効期限は 5 分。
+応答: `{ "uploadUrl": "署名付きPUT URL", "objectKey": "posts/7/3f2a….jpg", "expiresIn": 300, "requiredHeaders": { "Content-Type": "image/jpeg" } }`。`objectKey` は サーバーが `purpose/{userId}/{uuid}.{拡張子}` で生成する(クライアントはキーを決められない)。署名付きURLの有効期限は 5 分。発行は 1 ユーザーあたり 1 分に 30 回まで(超えたら 429 と `Retry-After`)。
 
 ### 投稿作成(`POST /api/posts`)
 | 項目 | 必須 | 検証 |

@@ -10,6 +10,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.raisetimeline.support.FakeObjectStorage;
 import com.raisetimeline.support.FakeStorageConfig;
 import com.raisetimeline.support.PostgresTestContainer;
+import com.raisetimeline.support.TestUsers;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,8 +46,8 @@ class PostImageApiTest {
   void setUp() throws Exception {
     jdbcTemplate.update("DELETE FROM users");
     storage.clear();
-    String a = register("alice");
-    String b = register("bob");
+    String a = TestUsers.register(mockMvc, "alice");
+    String b = TestUsers.register(mockMvc, "bob");
     alice = JsonPath.read(a, "$.accessToken");
     bob = JsonPath.read(b, "$.accessToken");
     aliceId = JsonPath.<Number>read(a, "$.user.id").longValue();
@@ -249,23 +250,6 @@ class PostImageApiTest {
     String key = "posts/" + userId + "/" + UUID.randomUUID() + ".png";
     storage.put(key, size, contentType);
     return key;
-  }
-
-  private String register(String username) throws Exception {
-    return mockMvc
-        .perform(
-            post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    "{\"username\":\""
-                        + username
-                        + "\",\"displayName\":\""
-                        + username
-                        + "\",\"password\":\"password123\"}"))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
   }
 
   private static String bearer(String token) {
