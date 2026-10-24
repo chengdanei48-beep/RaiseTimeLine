@@ -5,14 +5,14 @@ const COLORS = ['#1d9bf0', '#7856ff', '#f91880', '#00ba7c', '#ff7a00', '#e0245e'
 /** 画像機能(S3)の実装までは、表示名の頭文字を色付きの丸で表示する。 */
 export function Avatar({
   user,
-  large = false,
+  size = 'md',
 }: {
   user: Pick<User, 'id' | 'displayName'>
-  large?: boolean
+  size?: 'sm' | 'md' | 'lg'
 }) {
   return (
     <span
-      className={large ? 'avatar large' : 'avatar'}
+      className={size === 'md' ? 'avatar' : `avatar ${size}`}
       style={{ background: COLORS[user.id % COLORS.length] }}
       aria-hidden="true"
     >
