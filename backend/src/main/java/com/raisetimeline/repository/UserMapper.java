@@ -18,6 +18,9 @@ public interface UserMapper {
 
   Optional<User> findById(@Param("id") long id);
 
+  /** ユーザーが存在するか(存在確認だけなので、パスワードハッシュなどは取得しない)。 */
+  boolean existsById(@Param("id") long id);
+
   /**
    * ユーザー検索(ユーザーID・表示名の部分一致)。pattern は LIKE エスケープ済みで前後に % を付けたもの。 viewerId 自身は除く。cursorKey が null
    * なら先頭から。

@@ -176,7 +176,8 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 | テスト用 DB | Testcontainers(PostgreSQL) | 2.0.5(PostgreSQL 17) | 開発用 DB と分離。Docker が必要 |
 | 実行基盤(フロントのビルド) | Node.js / npm | v24.21.0 / 11.19.0 | jar 同梱ビルドは `frontend-maven-plugin` |
 | API 通信 | REST API(JSON)、ブラウザ側は標準の fetch | - | |
-| 画像ストレージ | AWS S3 | - | AWS SDK for Java v2 で署名付き URL を発行 |
+| 画像ストレージ | AWS S3 | - | AWS SDK for Java v2(2.57.3)で署名付き URL を発行 |
+| 画像ストレージ(開発) | S3Mock(`adobe/s3mock`、Docker) | latest | 開発用の S3 互換サーバー(`docker compose up -d` で起動、ポート 9000)。署名の検証・有効期限の判定はしないので、本番相当の確認は AWS で行う |
 | インフラ | AWS(EC2 + RDS + ALB + S3) | リージョン `ap-northeast-1` | 構成は [05-infrastructure.md](05-infrastructure.md)。構築方法(Terraform 等)は未決 |
 | ソース管理 | Git / GitHub | - | Issue → 専用ブランチ(`種別/issue番号-概要`)→ PR。master への直接 push 禁止 |
 

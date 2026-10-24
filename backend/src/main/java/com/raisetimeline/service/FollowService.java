@@ -83,6 +83,8 @@ public class FollowService {
   }
 
   private void requireUser(long userId) {
-    userMapper.findById(userId).orElseThrow(UserNotFoundException::new);
+    if (!userMapper.existsById(userId)) {
+      throw new UserNotFoundException();
+    }
   }
 }
