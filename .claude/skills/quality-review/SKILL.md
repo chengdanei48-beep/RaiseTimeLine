@@ -25,7 +25,7 @@ cd frontend && npm run typecheck      # tsc -b
 cd frontend && npm run build
 ```
 
-- テストは PostgreSQL(既定 5433)が起動している前提。Windows では `JAVA_HOME`(JDK 25)が必要。
+- テストは Testcontainers が起動する専用の PostgreSQL で動く(Docker が必要。開発用 DB の 5433 は使わない)。Windows では `JAVA_HOME`(JDK 25)が必要。
 - CI(`.github/workflows/ci.yml`)でも同じものを実行する。ツールの設定は `backend/checkstyle.xml`、`backend/spotbugs-exclude.xml`、`frontend/.oxlintrc.json`。
 - 静的解析の除外は誤検知に限り、理由をコメントで残す。
 

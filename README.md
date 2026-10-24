@@ -82,7 +82,7 @@ Copy-Item .env.example .env        # DB_PASSWORD と JWT_SECRET(32 バイト以�
 docker compose up -d               # PostgreSQL(5433)
 cd backend
 ./mvnw spring-boot:run             # http://localhost:8080(ヘルスチェック: /api/health)
-./mvnw verify                      # テスト + Spotless + Checkstyle + SpotBugs(PostgreSQL の起動が必要)
+./mvnw verify                      # テスト + Spotless + Checkstyle + SpotBugs(Docker の起動が必要)
 ```
 
 アプリは起動時にリポジトリ直下の `.env` を読みます(OS の環境変数が優先)。
@@ -96,7 +96,7 @@ npm run dev                        # http://localhost:5173(/api は 8080 のバ�
 npm run lint; npm run typecheck; npm run build
 ```
 
-> テスト(`./mvnw verify`)は開発用と同じ DB を使い、ユーザーを全削除します。テスト後は、画面で使うユーザーを登録し直してください。
+> テスト(`./mvnw verify`)は Testcontainers が起動する専用の PostgreSQL で動き、開発用 DB(5433)には触れません。Docker が起動していれば足り、開発用 DB の起動は不要です。
 
 ## ドキュメント
 
@@ -165,7 +165,7 @@ AWS 上での設定値は [インフラ構成](docs/05-infrastructure.md) 5章�
 ## テスト・Lint(実装後)
 
 ```
-cd backend && ./mvnw verify      # バックエンド: 統合テスト(DB の起動が必要)+ Spotless・Checkstyle・SpotBugs
+cd backend && ./mvnw verify      # バックエンド: 統合テスト(Testcontainers の PostgreSQL。Docker が必要)+ Spotless・Checkstyle・SpotBugs
 cd backend && ./mvnw spotless:apply  # 整形の自動修正
 cd frontend && npm run lint      # フロントエンドの静的解析(Oxlint)
 cd frontend && npm run typecheck # 型チェック
