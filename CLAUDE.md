@@ -45,6 +45,7 @@ PRを出す前や、全体を点検するときは、スキル `quality-review`(
 | バックエンド(Spring Boot / jar) | 8080 | `backend/src/main/resources/application.properties` の `server.port` |
 | フロントエンド(Vite 開発サーバー) | 5173 | `frontend/vite.config.ts` の `server.port`(`strictPort: true`) |
 | PostgreSQL(Docker) | 5433 | `docker-compose.yml` / `.env` の `DB_PORT` |
+| 画像用 S3 互換サーバー(Docker・開発用) | 9000 | `docker-compose.yml` / `.env` の `S3_PORT`(`S3_ENDPOINT` と合わせる) |
 
 ### ルール
 1. サーバーを起動する前に、既定ポートが使われていないか確認する。
@@ -53,7 +54,7 @@ PRを出す前や、全体を点検するときは、スキル `quality-review`(
 4. 停止したプロセス(PID・コマンドライン)は、作業報告でユーザーに伝える。
 5. 起動後は、既定ポートで応答することを確認する(例: `http://localhost:8080/api/health`、`http://localhost:5173/`)。
 6. jar の動作確認(`java -jar`)や、別DBを使った確認など、補助的な起動も同じルールに従い、既定ポート(8080)で行う。
-7. PostgreSQL は、自プロジェクトのコンテナ(`raisetimeline-postgres`)が起動済みで healthy ならそのまま使う(停止・再起動しない)。それ以外のプロセスが 5433 を使っている場合は、ルール2に従って停止する。
+7. PostgreSQL・S3 互換サーバーは、自プロジェクトのコンテナ(`raisetimeline-postgres`・`raisetimeline-s3`)が起動済みならそのまま使う(停止・再起動しない。PostgreSQL は healthy であること)。それ以外のプロセスが 5433・9000 を使っている場合は、ルール2に従って停止する。
 
 ### ポートを使っているプロセスの停止(PowerShell)
 ```powershell

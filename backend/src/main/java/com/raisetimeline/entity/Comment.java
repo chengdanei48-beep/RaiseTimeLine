@@ -14,6 +14,7 @@ public class Comment {
   private String authorUsername;
 
   private String authorDisplayName;
+  private String authorAvatarKey;
 
   public Long getId() {
     return id;
@@ -69,5 +70,13 @@ public class Comment {
 
   public void setAuthorDisplayName(String authorDisplayName) {
     this.authorDisplayName = authorDisplayName;
+  }
+
+  public String getAuthorAvatarKey() {
+    return authorAvatarKey;
+  }
+
+  public void setAuthorAvatarKey(String authorAvatarKey) {
+    this.authorAvatarKey = authorAvatarKey;
   }
 }

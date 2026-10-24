@@ -19,9 +19,11 @@ import org.springframework.stereotype.Component;
 public class PostCardAssembler {
 
   private final PostCardMapper postCardMapper;
+  private final AvatarUrls avatarUrls;
 
-  public PostCardAssembler(PostCardMapper postCardMapper) {
+  public PostCardAssembler(PostCardMapper postCardMapper, AvatarUrls avatarUrls) {
     this.postCardMapper = postCardMapper;
+    this.avatarUrls = avatarUrls;
   }
 
   public List<PostResponse> assemble(List<Post> posts, long viewerId) {
@@ -39,7 +41,8 @@ public class PostCardAssembler {
                     p,
                     likeCounts.getOrDefault(p.getId(), 0L),
                     commentCounts.getOrDefault(p.getId(), 0L),
-                    liked.contains(p.getId())))
+                    liked.contains(p.getId()),
+                    avatarUrls.urlOf(p.getAuthorAvatarKey())))
         .toList();
   }
 

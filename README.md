@@ -79,7 +79,7 @@ RaiseTimeLine/
 
 ```powershell
 Copy-Item .env.example .env        # DB_PASSWORD と JWT_SECRET(32 バイト以上)を設定する
-docker compose up -d               # PostgreSQL(5433)
+docker compose up -d               # PostgreSQL(5433)と、画像用の S3 互換サーバー(9000)
 cd backend
 ./mvnw spring-boot:run             # http://localhost:8080(ヘルスチェック: /api/health)
 ./mvnw verify                      # テスト + Spotless + Checkstyle + SpotBugs(Docker の起動が必要)

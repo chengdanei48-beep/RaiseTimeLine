@@ -9,6 +9,7 @@ public class FollowUser {
   private String username;
   private String displayName;
   private String bio;
+  private String avatarKey;
   private Instant followedAt;
 
   public Long getId() {
@@ -49,5 +50,13 @@ public class FollowUser {
 
   public void setFollowedAt(Instant followedAt) {
     this.followedAt = followedAt;
+  }
+
+  public String getAvatarKey() {
+    return avatarKey;
+  }
+
+  public void setAvatarKey(String avatarKey) {
+    this.avatarKey = avatarKey;
   }
 }

@@ -18,10 +18,12 @@ public class CommentService {
 
   private final CommentMapper commentMapper;
   private final PostMapper postMapper;
+  private final AvatarUrls avatarUrls;
 
-  public CommentService(CommentMapper commentMapper, PostMapper postMapper) {
+  public CommentService(CommentMapper commentMapper, PostMapper postMapper, AvatarUrls avatarUrls) {
     this.commentMapper = commentMapper;
     this.postMapper = postMapper;
+    this.avatarUrls = avatarUrls;
   }
 
   @Transactional
@@ -32,7 +34,7 @@ public class CommentService {
     comment.setUserId(userId);
     comment.setBody(body);
     commentMapper.insert(comment);
-    return CommentResponse.from(find(comment.getId()));
+    return toResponse(find(comment.getId()));
   }
 
   public CommentListResponse list(long postId, String cursor, Integer limit) {
@@ -53,7 +55,7 @@ public class CommentService {
       Comment last = page.get(page.size() - 1);
       nextCursor = CursorPaging.encode(last.getCreatedAt(), last.getId());
     }
-    return new CommentListResponse(page.stream().map(CommentResponse::from).toList(), nextCursor);
+    return new CommentListResponse(page.stream().map(this::toResponse).toList(), nextCursor);
   }
 
   @Transactional
@@ -71,5 +73,9 @@ public class CommentService {
 
   private Comment find(long commentId) {
     return commentMapper.findById(commentId).orElseThrow(CommentNotFoundException::new);
+  }
+
+  private CommentResponse toResponse(Comment comment) {
+    return CommentResponse.from(comment, avatarUrls.urlOf(comment.getAuthorAvatarKey()));
   }
 }
