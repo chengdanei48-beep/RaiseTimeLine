@@ -16,11 +16,11 @@ import org.springframework.stereotype.Component;
 public class UserListAssembler {
 
   private final FollowMapper followMapper;
-  private final AvatarUrls avatarUrls;
+  private final ImageUrls imageUrls;
 
-  public UserListAssembler(FollowMapper followMapper, AvatarUrls avatarUrls) {
+  public UserListAssembler(FollowMapper followMapper, ImageUrls imageUrls) {
     this.followMapper = followMapper;
-    this.avatarUrls = avatarUrls;
+    this.imageUrls = imageUrls;
   }
 
   /** 自分自身の行の followedByMe は null(フォローボタンを出さない)。 */
@@ -37,7 +37,7 @@ public class UserListAssembler {
                     u.getId(),
                     u.getUsername(),
                     u.getDisplayName(),
-                    avatarUrls.urlOf(u.getAvatarKey()),
+                    imageUrls.urlOf(u.getAvatarKey()),
                     u.getBio(),
                     u.getId() == viewerId ? null : followed.contains(u.getId())))
         .toList();

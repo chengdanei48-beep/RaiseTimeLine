@@ -15,6 +15,11 @@
     WHERE p.id = #{id} AND p.deleted_at IS NULL
   </select>
 
+  <insert id="insertImage">
+    INSERT INTO post_images (post_id, object_key, sort_order)
+    VALUES (#{postId}, #{objectKey}, #{sortOrder})
+  </insert>
+
   <update id="updateBody">
     UPDATE posts SET body = #{body}, updated_at = now() WHERE id = #{id} AND deleted_at IS NULL
   </update>

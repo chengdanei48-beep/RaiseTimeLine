@@ -7,6 +7,7 @@ import com.raisetimeline.exception.InvalidRequestException;
 import com.raisetimeline.storage.ObjectStorage;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -25,6 +26,9 @@ public class UploadService {
           "image/png", "png",
           "image/gif", "gif",
           "image/webp", "webp");
+
+  /** キーのファイル名の部分。UUID と拡張子だけを受け付ける(「..」や「/」を含めない)。 */
+  private static final Pattern KEY_FILE = Pattern.compile("[A-Za-z0-9-]+\\.[a-z0-9]+");
 
   private final ObjectStorage storage;
 
@@ -47,6 +51,28 @@ public class UploadService {
     var upload = storage.presignPut(key, request.contentType(), request.size());
     return new PresignResponse(
         upload.url(), key, upload.expiresInSeconds(), upload.requiredHeaders());
+  }
+
+  /**
+   * アップロード済みの画像のキーを確かめる。サーバーが発行した形({purpose}/{ユーザーID}/{uuid}.{拡張子})で、 自分のもので、S3
+   * に存在し、サイズ・形式が条件内であること。満たさなければ 400。
+   */
+  public void verifyUploaded(long userId, Purpose purpose, String key) {
+    String prefix = purpose.keyPrefix() + "/" + userId + "/";
+    if (key == null
+        || !key.startsWith(prefix)
+        || !KEY_FILE.matcher(key.substring(prefix.length())).matches()) {
+      throw new InvalidRequestException("画像が不正です");
+    }
+    var stored =
+        storage.stat(key).orElseThrow(() -> new InvalidRequestException("画像がアップロードされていません"));
+    long max = maxBytes(purpose);
+    if (stored.size() > max) {
+      throw new InvalidRequestException("画像は " + (max / 1024 / 1024) + "MB 以下にしてください");
+    }
+    if (!isAllowedContentType(stored.contentType())) {
+      throw new InvalidRequestException("画像は JPEG・PNG・GIF・WebP のいずれかにしてください");
+    }
   }
 
   public static long maxBytes(Purpose purpose) {
