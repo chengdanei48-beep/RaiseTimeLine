@@ -6,11 +6,13 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.jayway.jsonpath.JsonPath;
+import com.raisetimeline.support.PostgresTestContainer;
 import com.raisetimeline.support.SqlCountConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -18,6 +20,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 /** タイムライン取得の SQL 発行数が投稿数に比例しないこと(N+1 がないこと)の検証。 */
+@ImportTestcontainers(PostgresTestContainer.class)
 @SpringBootTest(properties = "app.jwt.secret=test-secret-test-secret-test-secret-0123456789")
 @AutoConfigureMockMvc
 @Import(SqlCountConfig.class)

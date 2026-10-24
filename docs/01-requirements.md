@@ -173,6 +173,7 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 | 画面遷移 | React Router(`react-router-dom`) | 7.18.4 | |
 | 静的解析(フロント) | Oxlint | 1.86.0 | `npm run lint` / `npm run typecheck` |
 | 静的解析(バック) | Spotless・Checkstyle・SpotBugs | 2.46.1 / 10.26.1 / 4.9.8 | `./mvnw verify` |
+| テスト用 DB | Testcontainers(PostgreSQL) | 2.0.5(PostgreSQL 17) | 開発用 DB と分離。Docker が必要 |
 | 実行基盤(フロントのビルド) | Node.js / npm | v24.21.0 / 11.19.0 | jar 同梱ビルドは `frontend-maven-plugin` |
 | API 通信 | REST API(JSON)、ブラウザ側は標準の fetch | - | |
 | 画像ストレージ | AWS S3 | - | AWS SDK for Java v2 で署名付き URL を発行 |
