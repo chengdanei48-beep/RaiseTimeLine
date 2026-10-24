@@ -12,8 +12,11 @@ import com.raisetimeline.repository.PostMapper;
 import com.raisetimeline.repository.UserMapper;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 @Transactional(readOnly = true)
@@ -26,21 +29,27 @@ public class PostService {
   private final PostCardAssembler assembler;
   private final UserMapper userMapper;
   private final UploadService uploadService;
+  private final TransactionTemplate tx;
 
   public PostService(
       PostMapper postMapper,
       PostCardAssembler assembler,
       UserMapper userMapper,
-      UploadService uploadService) {
+      UploadService uploadService,
+      TransactionTemplate tx) {
     this.postMapper = postMapper;
     this.assembler = assembler;
     this.userMapper = userMapper;
     this.uploadService = uploadService;
+    this.tx = tx;
   }
 
-  @Transactional
+  /**
+   * 投稿を作る。画像は、自分がアップロード済みのものだけ(重複なし)。S3 への確認はネットワーク通信なので、 DB トランザクションの外で先に行い(接続を握らない)、投稿と画像の保存だけを 1
+   * つの短いトランザクションにする。
+   */
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
   public PostResponse create(long userId, String body, List<String> imageKeys) {
-    // 画像は、自分がアップロード済みのものだけ(重複なし)。先に確かめてから、投稿と画像を同じトランザクションで保存する
     if (imageKeys.size() > MAX_IMAGES) {
       throw new InvalidRequestException("画像は" + MAX_IMAGES + "枚までです");
     }
@@ -49,6 +58,12 @@ public class PostService {
     }
     imageKeys.forEach(key -> uploadService.verifyUploaded(userId, Purpose.POST, key));
 
+    Long postId = tx.execute(status -> savePost(userId, body, imageKeys));
+    return assembler.assembleOne(find(Objects.requireNonNull(postId)), userId);
+  }
+
+  /** 投稿と画像を保存する(トランザクションの中で呼ぶ)。作った投稿の ID を返す。 */
+  private long savePost(long userId, String body, List<String> imageKeys) {
     Post post = new Post();
     post.setUserId(userId);
     post.setBody(body);
@@ -56,7 +71,7 @@ public class PostService {
     for (int i = 0; i < imageKeys.size(); i++) {
       postMapper.insertImage(post.getId(), imageKeys.get(i), i);
     }
-    return assembler.assembleOne(find(post.getId()), userId);
+    return post.getId();
   }
 
   public PostResponse get(long viewerId, long postId) {

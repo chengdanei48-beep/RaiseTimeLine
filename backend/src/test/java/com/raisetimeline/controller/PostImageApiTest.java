@@ -68,6 +68,29 @@ class PostImageApiTest {
   }
 
   @Test
+  void S3への確認はDBトランザクションの外で行われる() throws Exception {
+    String key = uploaded(aliceId, "image/png", 10);
+
+    createPost(alice, "確認", List.of(key)).andExpect(status().isCreated());
+
+    org.assertj.core.api.Assertions.assertThat(storage.statWasCalledInsideTransaction())
+        .as("S3 への確認の間、DB 接続を握らない")
+        .isFalse();
+  }
+
+  @Test
+  void 長すぎるキーは400で投稿は作られない() throws Exception {
+    String longKey = "posts/" + aliceId + "/" + "a".repeat(300) + ".png";
+    storage.put(longKey, 10, "image/png");
+
+    createPost(alice, "長いキー", List.of(longKey)).andExpect(status().isBadRequest());
+
+    mockMvc
+        .perform(get("/api/timeline").header("Authorization", bearer(alice)))
+        .andExpect(jsonPath("$.items.length()").value(0));
+  }
+
+  @Test
   void 画像なしの投稿はimagesが空() throws Exception {
     createPost(alice, "本文だけ", List.of())
         .andExpect(status().isCreated())

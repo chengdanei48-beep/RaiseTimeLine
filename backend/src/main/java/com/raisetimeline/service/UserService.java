@@ -11,7 +11,9 @@ import com.raisetimeline.repository.UserMapper;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @Service
 @Transactional(readOnly = true)
@@ -23,16 +25,19 @@ public class UserService {
   private final UserListAssembler userListAssembler;
   private final ImageUrls imageUrls;
   private final UploadService uploadService;
+  private final TransactionTemplate tx;
 
   public UserService(
       UserMapper userMapper,
       UserListAssembler userListAssembler,
       ImageUrls imageUrls,
-      UploadService uploadService) {
+      UploadService uploadService,
+      TransactionTemplate tx) {
     this.userMapper = userMapper;
     this.userListAssembler = userListAssembler;
     this.imageUrls = imageUrls;
     this.uploadService = uploadService;
+    this.tx = tx;
   }
 
   public ProfileResponse profile(long viewerId, long userId) {
@@ -42,8 +47,11 @@ public class UserService {
         .orElseThrow(UserNotFoundException::new);
   }
 
-  /** 自分のプロフィールを更新する。ユーザーID(username)は変更できない。 */
-  @Transactional
+  /**
+   * 自分のプロフィールを更新する。ユーザーID(username)は変更できない。 アイコンの S3 への確認は、DB
+   * トランザクションの外で先に行う(接続を握らない)。更新だけを短いトランザクションにする。
+   */
+  @Transactional(propagation = Propagation.NOT_SUPPORTED)
   public ProfileResponse updateProfile(long userId, UpdateProfileRequest request) {
     boolean changeAvatar = request.isAvatarKeySpecified();
     String avatarKey = request.getAvatarKey();
@@ -51,7 +59,10 @@ public class UserService {
       uploadService.verifyUploaded(userId, PresignRequest.Purpose.AVATAR, avatarKey);
     }
     String bio = request.getBio() == null || request.getBio().isEmpty() ? null : request.getBio();
-    userMapper.updateProfile(userId, request.getDisplayName(), bio, changeAvatar, avatarKey);
+    tx.executeWithoutResult(
+        status ->
+            userMapper.updateProfile(
+                userId, request.getDisplayName(), bio, changeAvatar, avatarKey));
     return profile(userId, userId);
   }
 

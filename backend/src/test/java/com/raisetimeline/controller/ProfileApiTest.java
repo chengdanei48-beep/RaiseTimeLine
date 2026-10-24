@@ -116,6 +116,19 @@ class ProfileApiTest {
   // ---- アイコン ----
 
   @Test
+  void アイコンのS3への確認はDBトランザクションの外で行われる() throws Exception {
+    String key = uploaded(aliceId, "image/png", 100);
+
+    update(alice, "{\"displayName\":\"a\",\"avatarKey\":\"" + key + "\"}")
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.avatarUrl").isNotEmpty());
+
+    org.assertj.core.api.Assertions.assertThat(storage.statWasCalledInsideTransaction())
+        .as("S3 への確認の間、DB 接続を握らない")
+        .isFalse();
+  }
+
+  @Test
   void アイコンを設定するとあらゆる応答のavatarUrlに入る() throws Exception {
     String key = uploaded(aliceId, "image/png", 1000);
 
