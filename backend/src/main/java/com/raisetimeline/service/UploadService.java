@@ -27,6 +27,9 @@ public class UploadService {
           "image/gif", "gif",
           "image/webp", "webp");
 
+  /** キーの最大の長さ(DB の object_key / avatar_key の長さに合わせる)。 */
+  private static final int KEY_MAX_LENGTH = 255;
+
   /** キーのファイル名の部分。UUID と拡張子だけを受け付ける(「..」や「/」を含めない)。 */
   private static final Pattern KEY_FILE = Pattern.compile("[A-Za-z0-9-]+\\.[a-z0-9]+");
 
@@ -60,6 +63,7 @@ public class UploadService {
   public void verifyUploaded(long userId, Purpose purpose, String key) {
     String prefix = purpose.keyPrefix() + "/" + userId + "/";
     if (key == null
+        || key.length() > KEY_MAX_LENGTH
         || !key.startsWith(prefix)
         || !KEY_FILE.matcher(key.substring(prefix.length())).matches()) {
       throw new InvalidRequestException("画像が不正です");
