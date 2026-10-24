@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import com.raisetimeline.support.PostgresTestContainer;
+import com.raisetimeline.support.TestUsers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,12 +34,12 @@ class SearchApiTest {
   @BeforeEach
   void setUp() throws Exception {
     jdbcTemplate.update("DELETE FROM users");
-    me = JsonPath.read(register("me_user", "わたし"), "$.accessToken");
-    hanakoId = userId(register("hanako", "花子"));
-    register("Hanayama", "花山太郎");
-    register("jiro", "次郎");
-    register("a_b", "アンダー");
-    register("abx", "エービー");
+    me = TestUsers.registerAndGetToken(mockMvc, "me_user", "わたし");
+    hanakoId = TestUsers.userId(TestUsers.register(mockMvc, "hanako", "花子"));
+    TestUsers.register(mockMvc, "Hanayama", "花山太郎");
+    TestUsers.register(mockMvc, "jiro", "次郎");
+    TestUsers.register(mockMvc, "a_b", "アンダー");
+    TestUsers.register(mockMvc, "abx", "エービー");
   }
 
   @Test
@@ -161,28 +162,7 @@ class SearchApiTest {
     return mockMvc.perform(get("/api/users?q={q}" + extra, q).header("Authorization", bearer(me)));
   }
 
-  private static long userId(String registerResponse) {
-    return JsonPath.<Number>read(registerResponse, "$.user.id").longValue();
-  }
-
   /** 登録して、応答の JSON を返す。 */
-  private String register(String username, String displayName) throws Exception {
-    return mockMvc
-        .perform(
-            post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    "{\"username\":\""
-                        + username
-                        + "\",\"displayName\":\""
-                        + displayName
-                        + "\",\"password\":\"password123\"}"))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-  }
-
   private static String bearer(String token) {
     return "Bearer " + token;
   }

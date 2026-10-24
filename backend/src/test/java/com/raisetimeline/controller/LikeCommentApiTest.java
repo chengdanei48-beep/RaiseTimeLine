@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import com.raisetimeline.support.PostgresTestContainer;
+import com.raisetimeline.support.TestUsers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +36,8 @@ class LikeCommentApiTest {
   @BeforeEach
   void setUp() throws Exception {
     jdbcTemplate.update("DELETE FROM users");
-    alice = registerAndGetToken("alice", "アリス");
-    bob = registerAndGetToken("bob", "ボブ");
+    alice = TestUsers.registerAndGetToken(mockMvc, "alice", "アリス");
+    bob = TestUsers.registerAndGetToken(mockMvc, "bob", "ボブ");
     postId = createPost(alice, "こんにちは");
   }
 
@@ -274,25 +275,6 @@ class LikeCommentApiTest {
             .getResponse()
             .getContentAsString();
     return JsonPath.<Number>read(response, "$.id").longValue();
-  }
-
-  private String registerAndGetToken(String username, String displayName) throws Exception {
-    String response =
-        mockMvc
-            .perform(
-                post("/api/auth/register")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(
-                        "{\"username\":\""
-                            + username
-                            + "\",\"displayName\":\""
-                            + displayName
-                            + "\",\"password\":\"password123\"}"))
-            .andExpect(status().isCreated())
-            .andReturn()
-            .getResponse()
-            .getContentAsString();
-    return JsonPath.read(response, "$.accessToken");
   }
 
   private static String bearer(String token) {

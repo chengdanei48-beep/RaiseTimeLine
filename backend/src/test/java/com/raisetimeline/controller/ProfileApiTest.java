@@ -10,6 +10,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.raisetimeline.support.FakeObjectStorage;
 import com.raisetimeline.support.FakeStorageConfig;
 import com.raisetimeline.support.PostgresTestContainer;
+import com.raisetimeline.support.TestUsers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,8 +44,8 @@ class ProfileApiTest {
   void setUp() throws Exception {
     jdbcTemplate.update("DELETE FROM users");
     storage.clear();
-    String a = register("alice", "alice");
-    String b = register("bob", "bob");
+    String a = TestUsers.register(mockMvc, "alice", "alice");
+    String b = TestUsers.register(mockMvc, "bob", "bob");
     alice = JsonPath.read(a, "$.accessToken");
     bob = JsonPath.read(b, "$.accessToken");
     aliceId = JsonPath.<Number>read(a, "$.user.id").longValue();
@@ -237,23 +238,6 @@ class ProfileApiTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"body\":\"" + body + "\"}"))
         .andExpect(status().isCreated());
-  }
-
-  private String register(String username, String displayName) throws Exception {
-    return mockMvc
-        .perform(
-            post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    "{\"username\":\""
-                        + username
-                        + "\",\"displayName\":\""
-                        + displayName
-                        + "\",\"password\":\"password123\"}"))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
   }
 
   private static String bearer(String token) {

@@ -34,13 +34,16 @@ public class UploadService {
   private static final Pattern KEY_FILE = Pattern.compile("[A-Za-z0-9-]+\\.[a-z0-9]+");
 
   private final ObjectStorage storage;
+  private final PresignRateLimiter rateLimiter;
 
-  public UploadService(ObjectStorage storage) {
+  public UploadService(ObjectStorage storage, PresignRateLimiter rateLimiter) {
     this.storage = storage;
+    this.rateLimiter = rateLimiter;
   }
 
   /** 形式・サイズを検証し、サーバーが決めたキーで署名付き PUT URL を発行する(キーはクライアントが決められない)。 */
   public PresignResponse presign(long userId, PresignRequest request) {
+    rateLimiter.check(userId);
     String extension = EXTENSIONS.get(request.contentType());
     if (extension == null) {
       throw new InvalidRequestException("画像は JPEG・PNG・GIF・WebP のいずれかにしてください");

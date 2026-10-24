@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import com.raisetimeline.support.PostgresTestContainer;
+import com.raisetimeline.support.TestUsers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,9 +39,9 @@ class FollowApiTest {
   @BeforeEach
   void setUp() throws Exception {
     jdbcTemplate.update("DELETE FROM users");
-    String a = register("alice", "アリス");
-    String b = register("bob", "ボブ");
-    String c = register("carol", "キャロル");
+    String a = TestUsers.register(mockMvc, "alice", "アリス");
+    String b = TestUsers.register(mockMvc, "bob", "ボブ");
+    String c = TestUsers.register(mockMvc, "carol", "キャロル");
     alice = JsonPath.read(a, "$.accessToken");
     bob = JsonPath.read(b, "$.accessToken");
     carol = JsonPath.read(c, "$.accessToken");
@@ -242,23 +243,6 @@ class FollowApiTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"body\":\"" + body + "\"}"))
         .andExpect(status().isCreated());
-  }
-
-  private String register(String username, String displayName) throws Exception {
-    return mockMvc
-        .perform(
-            post("/api/auth/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    "{\"username\":\""
-                        + username
-                        + "\",\"displayName\":\""
-                        + displayName
-                        + "\",\"password\":\"password123\"}"))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
   }
 
   private static String bearer(String token) {
