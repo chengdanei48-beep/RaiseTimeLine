@@ -84,3 +84,20 @@ export interface FollowUserPage {
 }
 
 export type TimelineScope = 'following' | 'all'
+
+/** 署名付き URL の発行結果。uploadUrl へ requiredHeaders を付けて PUT する。 */
+export interface Presign {
+  uploadUrl: string
+  objectKey: string
+  expiresIn: number
+  requiredHeaders: Record<string, string>
+}
+
+export type UploadPurpose = 'POST' | 'AVATAR'
+
+export interface UpdateProfileInput {
+  displayName: string
+  bio: string
+  /** 省略=変更なし / null=アイコンを削除 / 文字列=アップロード済みの新しいアイコンのキー */
+  avatarKey?: string | null
+}

@@ -1,5 +1,5 @@
 import { authRequest } from './client'
-import type { FollowUserPage, Profile, TimelinePage } from './types'
+import type { FollowUserPage, Profile, TimelinePage, UpdateProfileInput } from './types'
 
 function cursorQuery(cursor: string | null): string {
   return cursor === null ? '' : `?cursor=${encodeURIComponent(cursor)}`
@@ -32,4 +32,8 @@ export function fetchFollowers(id: number, cursor: string | null): Promise<Follo
 export function searchUsers(q: string, cursor: string | null): Promise<FollowUserPage> {
   const cursorPart = cursor === null ? '' : `&cursor=${encodeURIComponent(cursor)}`
   return authRequest<FollowUserPage>(`/api/users?q=${encodeURIComponent(q)}${cursorPart}`, 'GET')
+}
+
+export function updateProfile(input: UpdateProfileInput): Promise<Profile> {
+  return authRequest<Profile>('/api/users/me', 'PUT', input)
 }

@@ -61,3 +61,21 @@ export function normalizeSearchKeyword(value: string): string {
   }
   return keyword
 }
+
+export const BIO_MAX_LENGTH = 160
+
+/** 自己紹介(任意)。0〜160文字。 */
+export function validateBio(value: string): string | null {
+  return value.trim().length <= BIO_MAX_LENGTH ? null : '自己紹介は160文字以内で入力してください'
+}
+
+export const AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+export const AVATAR_MAX_BYTES = 2 * 1024 * 1024
+
+/** アイコン画像(JPEG/PNG/GIF/WebP、2MB以下)。サーバーでも同じ検証をする。 */
+export function validateAvatarFile(file: File): string | null {
+  if (!AVATAR_TYPES.includes(file.type)) {
+    return '画像は JPEG・PNG・GIF・WebP のいずれかにしてください'
+  }
+  return file.size <= AVATAR_MAX_BYTES ? null : '画像は 2MB 以下にしてください'
+}

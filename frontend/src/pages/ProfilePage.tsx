@@ -132,7 +132,11 @@ function ProfileView({ userId }: { userId: number }) {
                 <h2>{profile.displayName}</h2>
                 <span className="muted">@{profile.username}</span>
               </div>
-              {!profile.isMe && (
+              {profile.isMe ? (
+                <Link className="btn btn-outline" to="/settings/profile">
+                  編集
+                </Link>
+              ) : (
                 <FollowButton
                   userId={profile.id}
                   following={profile.followedByMe}

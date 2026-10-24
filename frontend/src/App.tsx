@@ -8,6 +8,7 @@ import { LoginPage } from './pages/LoginPage'
 import { PostDetailPage } from './pages/PostDetailPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { SearchPage } from './pages/SearchPage'
+import { SettingsProfilePage } from './pages/SettingsProfilePage'
 import { SignupPage } from './pages/SignupPage'
 
 export function App() {
@@ -24,6 +25,7 @@ export function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/posts/:id" element={<PostDetailPage />} />
           <Route path="/search" element={<SearchPage />} />
+          <Route path="/settings/profile" element={<SettingsProfilePage />} />
           <Route path="/users/:id" element={<ProfilePage />} />
           <Route path="/users/:id/following" element={<FollowListPage kind="following" />} />
           <Route path="/users/:id/followers" element={<FollowListPage kind="followers" />} />
