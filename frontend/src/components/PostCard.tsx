@@ -103,7 +103,9 @@ export function PostCard({ post, mine, detail = false, onEdit, onChange, onDelet
             @{post.author.username}
           </Link>
           <span className="dot">·</span>
-          <span className="time">{relativeTime(post.createdAt)}</span>
+          <Link className="time" to={`/posts/${post.id}`}>
+            {relativeTime(post.createdAt)}
+          </Link>
           {edited && <span className="edited">(編集済み)</span>}
           <span className="grow" />
           {mine && mode === 'view' && (

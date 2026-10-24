@@ -94,7 +94,9 @@ public class PostService {
 
   /** 特定ユーザーの投稿。形式・並び・ページングはタイムラインと同じ。 */
   public TimelineResponse userPosts(long viewerId, long userId, String cursor, Integer limit) {
-    userMapper.findById(userId).orElseThrow(UserNotFoundException::new);
+    if (!userMapper.existsById(userId)) {
+      throw new UserNotFoundException();
+    }
     int size = CursorPaging.pageSize(limit);
     CursorPaging.Position position = CursorPaging.decode(cursor);
     List<Post> rows =

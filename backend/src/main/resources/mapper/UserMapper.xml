@@ -15,6 +15,10 @@
     SELECT * FROM users WHERE id = #{id}
   </select>
 
+  <select id="existsById" resultType="boolean">
+    SELECT EXISTS (SELECT 1 FROM users WHERE id = #{id})
+  </select>
+
   <!--
     ユーザー検索。pattern は LIKE のエスケープ済みで、前後に % を付けたもの(エスケープ文字は \)。
     自分(viewerId)は除く。lower(username) 昇順、同じなら id 昇順。
