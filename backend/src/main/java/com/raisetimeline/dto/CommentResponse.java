@@ -6,7 +6,7 @@ import java.time.Instant;
 
 public record CommentResponse(Long id, String body, Instant createdAt, AuthorResponse author) {
 
-  public static CommentResponse from(Comment comment) {
+  public static CommentResponse from(Comment comment, String authorAvatarUrl) {
     return new CommentResponse(
         comment.getId(),
         comment.getBody(),
@@ -15,6 +15,6 @@ public record CommentResponse(Long id, String body, Instant createdAt, AuthorRes
             comment.getUserId(),
             comment.getAuthorUsername(),
             comment.getAuthorDisplayName(),
-            null));
+            authorAvatarUrl));
   }
 }

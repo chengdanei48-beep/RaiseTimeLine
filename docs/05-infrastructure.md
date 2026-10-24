@@ -117,7 +117,8 @@ sequenceDiagram
 | `SERVER_FORWARD_HEADERS_STRATEGY` | `framework` | ALB が付ける `X-Forwarded-*` を信頼し、HTTPS と認識させる |
 | `JWT_SECRET` | 32 バイト以上のランダム文字列。SSM Parameter Store(SecureString)に保管 | JWT の署名鍵。複数台にする場合は全台で同じ値にする。ソース・ログに出さない |
 | `REFRESH_COOKIE_SECURE` | 未設定(既定 `true`) | リフレッシュトークンの Cookie に Secure 属性を付ける。HTTPS 運用では変更しない(HTTP での検証時のみ `false`) |
-| `APP_S3_BUCKET` / `AWS_REGION` | 画像用バケット名 / `ap-northeast-1` | 署名付き URL の発行先 |
+| `S3_BUCKET` / `AWS_REGION` | 画像用バケット名 / `ap-northeast-1` | 署名付き URL の発行先 |
+| `S3_ENDPOINT` / `S3_ACCESS_KEY` / `S3_SECRET_KEY` | **AWS では設定しない(空)**。開発では docker-compose の S3 互換サーバー(`http://localhost:9000`)と、ダミーのキー | endpoint が空なら AWS S3 に接続し、キーが空なら EC2 の IAM ロールで認証する(アクセスキーを作らない) |
 
 ## 6. 運用・費用
 

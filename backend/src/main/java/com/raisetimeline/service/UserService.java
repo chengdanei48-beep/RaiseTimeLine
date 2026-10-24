@@ -2,12 +2,15 @@ package com.raisetimeline.service;
 
 import com.raisetimeline.dto.FollowUserListResponse;
 import com.raisetimeline.dto.ProfileResponse;
+import com.raisetimeline.dto.UpdateProfileRequest;
 import com.raisetimeline.entity.FollowUser;
 import com.raisetimeline.exception.InvalidRequestException;
 import com.raisetimeline.exception.UserNotFoundException;
 import com.raisetimeline.repository.UserMapper;
+import com.raisetimeline.storage.ObjectStorage;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Pattern;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,19 +20,59 @@ public class UserService {
 
   public static final int KEYWORD_MAX_LENGTH = 50;
 
+  /** アイコンのキーの形。サーバーが発行した avatars/{ユーザーID}/{uuid}.{拡張子} だけを受け付ける。 */
+  private static final Pattern AVATAR_FILE = Pattern.compile("[A-Za-z0-9-]+\\.[a-z0-9]+");
+
   private final UserMapper userMapper;
   private final UserListAssembler userListAssembler;
+  private final AvatarUrls avatarUrls;
+  private final ObjectStorage storage;
 
-  public UserService(UserMapper userMapper, UserListAssembler userListAssembler) {
+  public UserService(
+      UserMapper userMapper,
+      UserListAssembler userListAssembler,
+      AvatarUrls avatarUrls,
+      ObjectStorage storage) {
     this.userMapper = userMapper;
     this.userListAssembler = userListAssembler;
+    this.avatarUrls = avatarUrls;
+    this.storage = storage;
   }
 
   public ProfileResponse profile(long viewerId, long userId) {
     return userMapper
         .findProfile(userId, viewerId)
-        .map(p -> ProfileResponse.of(p, viewerId))
+        .map(p -> ProfileResponse.of(p, viewerId, avatarUrls.urlOf(p.getAvatarKey())))
         .orElseThrow(UserNotFoundException::new);
+  }
+
+  /** 自分のプロフィールを更新する。ユーザーID(username)は変更できない。 */
+  @Transactional
+  public ProfileResponse updateProfile(long userId, UpdateProfileRequest request) {
+    boolean changeAvatar = request.isAvatarKeySpecified();
+    String avatarKey = request.getAvatarKey();
+    if (changeAvatar && avatarKey != null) {
+      validateAvatarKey(userId, avatarKey);
+    }
+    String bio = request.getBio() == null || request.getBio().isEmpty() ? null : request.getBio();
+    userMapper.updateProfile(userId, request.getDisplayName(), bio, changeAvatar, avatarKey);
+    return profile(userId, userId);
+  }
+
+  /** 自分が発行したキーで、S3 に存在し、2MB 以下の画像であることを確かめる。 */
+  private void validateAvatarKey(long userId, String key) {
+    String prefix = "avatars/" + userId + "/";
+    if (!key.startsWith(prefix) || !AVATAR_FILE.matcher(key.substring(prefix.length())).matches()) {
+      throw new InvalidRequestException("アイコン画像が不正です");
+    }
+    var stored =
+        storage.stat(key).orElseThrow(() -> new InvalidRequestException("アイコン画像がアップロードされていません"));
+    if (stored.size() > UploadService.AVATAR_MAX_BYTES) {
+      throw new InvalidRequestException("アイコン画像は 2MB 以下にしてください");
+    }
+    if (!UploadService.isAllowedContentType(stored.contentType())) {
+      throw new InvalidRequestException("アイコン画像は JPEG・PNG・GIF・WebP のいずれかにしてください");
+    }
   }
 
   /** ユーザーID・表示名の部分一致検索(大文字小文字を区別しない)。自分は除く。 */

@@ -9,7 +9,8 @@
   <!-- 削除済みのコメント、削除済みの投稿のコメントは見つからない扱い。 -->
   <select id="findById" resultType="com.raisetimeline.entity.Comment">
     SELECT c.id, c.post_id, c.user_id, c.body, c.created_at,
-           u.username AS author_username, u.display_name AS author_display_name
+           u.username AS author_username, u.display_name AS author_display_name,
+           u.avatar_key AS author_avatar_key
     FROM comments c
       JOIN users u ON u.id = c.user_id
       JOIN posts p ON p.id = c.post_id AND p.deleted_at IS NULL
@@ -23,7 +24,8 @@
   <!-- 古い順。cursorCreatedAt が null なら先頭から。 -->
   <select id="findByPost" resultType="com.raisetimeline.entity.Comment">
     SELECT c.id, c.post_id, c.user_id, c.body, c.created_at,
-           u.username AS author_username, u.display_name AS author_display_name
+           u.username AS author_username, u.display_name AS author_display_name,
+           u.avatar_key AS author_avatar_key
     FROM comments c JOIN users u ON u.id = c.user_id
     WHERE c.post_id = #{postId} AND c.deleted_at IS NULL
     <if test="cursorCreatedAt != null">

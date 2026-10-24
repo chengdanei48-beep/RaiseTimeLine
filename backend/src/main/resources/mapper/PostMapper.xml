@@ -9,7 +9,8 @@
   <!-- 削除済みは見つからない扱い。 -->
   <select id="findById" resultType="com.raisetimeline.entity.Post">
     SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
-           u.username AS author_username, u.display_name AS author_display_name
+           u.username AS author_username, u.display_name AS author_display_name,
+           u.avatar_key AS author_avatar_key
     FROM posts p JOIN users u ON u.id = p.user_id
     WHERE p.id = #{id} AND p.deleted_at IS NULL
   </select>
@@ -28,7 +29,8 @@
   -->
   <select id="findTimeline" resultType="com.raisetimeline.entity.Post">
     SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
-           u.username AS author_username, u.display_name AS author_display_name
+           u.username AS author_username, u.display_name AS author_display_name,
+           u.avatar_key AS author_avatar_key
     FROM posts p JOIN users u ON u.id = p.user_id
     WHERE p.deleted_at IS NULL
     <if test="followingOnly">
@@ -45,7 +47,8 @@
   <!-- 特定ユーザーの投稿。新しい順。cursorCreatedAt が null なら先頭から。 -->
   <select id="findByUser" resultType="com.raisetimeline.entity.Post">
     SELECT p.id, p.user_id, p.body, p.created_at, p.updated_at,
-           u.username AS author_username, u.display_name AS author_display_name
+           u.username AS author_username, u.display_name AS author_display_name,
+           u.avatar_key AS author_avatar_key
     FROM posts p JOIN users u ON u.id = p.user_id
     WHERE p.user_id = #{userId} AND p.deleted_at IS NULL
     <if test="cursorCreatedAt != null">

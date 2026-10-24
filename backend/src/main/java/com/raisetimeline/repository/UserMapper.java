@@ -31,4 +31,12 @@ public interface UserMapper {
 
   /** プロフィール(件数と、viewerId がフォロー済みかつき)。 */
   Optional<UserProfile> findProfile(@Param("id") long id, @Param("viewerId") long viewerId);
+
+  /** プロフィール更新。changeAvatar のときだけ avatarKey を更新する(avatarKey が null ならアイコン削除)。 */
+  int updateProfile(
+      @Param("id") long id,
+      @Param("displayName") String displayName,
+      @Param("bio") String bio,
+      @Param("changeAvatar") boolean changeAvatar,
+      @Param("avatarKey") String avatarKey);
 }

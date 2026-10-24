@@ -14,7 +14,7 @@
 
   <!-- userId がフォローしている人。新しくフォローした順。 -->
   <select id="findFollowing" resultType="com.raisetimeline.entity.FollowUser">
-    SELECT u.id, u.username, u.display_name, u.bio, f.created_at AS followed_at
+    SELECT u.id, u.username, u.display_name, u.bio, u.avatar_key, f.created_at AS followed_at
     FROM follows f JOIN users u ON u.id = f.followee_id
     WHERE f.follower_id = #{userId}
     <if test="cursorFollowedAt != null">
@@ -26,7 +26,7 @@
 
   <!-- userId をフォローしている人。新しくフォローされた順。 -->
   <select id="findFollowers" resultType="com.raisetimeline.entity.FollowUser">
-    SELECT u.id, u.username, u.display_name, u.bio, f.created_at AS followed_at
+    SELECT u.id, u.username, u.display_name, u.bio, u.avatar_key, f.created_at AS followed_at
     FROM follows f JOIN users u ON u.id = f.follower_id
     WHERE f.followee_id = #{userId}
     <if test="cursorFollowedAt != null">

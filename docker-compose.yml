@@ -16,5 +16,22 @@ services:
       timeout: 3s
       retries: 10
 
+  # 開発用の S3 互換サーバー(画像用)。本番は AWS S3 を使う(アプリの S3_ENDPOINT を空にする)。
+  # 署名の検証や有効期限の判定はしないので、本番と同じ確認にはならない点に注意。
+  s3:
+    image: adobe/s3mock:latest
+    container_name: raisetimeline-s3
+    # イメージの既定ユーザーは名前付きボリューム(/data)に書き込めないため、root で動かす(開発用)
+    user: "0"
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: ${S3_BUCKET:-raisetimeline-images}
+      COM_ADOBE_TESTING_S3MOCK_STORE_ROOT: /data
+      COM_ADOBE_TESTING_S3MOCK_STORE_RETAIN_FILES_ON_EXIT: "true"
+    ports:
+      - "${S3_PORT:-9000}:9090"
+    volumes:
+      - raisetimeline-s3data:/data
+
 volumes:
   raisetimeline-pgdata:
+  raisetimeline-s3data:

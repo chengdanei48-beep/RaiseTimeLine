@@ -21,7 +21,7 @@
     cursorKey が null なら先頭から。
   -->
   <select id="searchUsers" resultType="com.raisetimeline.entity.FollowUser">
-    SELECT u.id, u.username, u.display_name, u.bio
+    SELECT u.id, u.username, u.display_name, u.bio, u.avatar_key
     FROM users u
     WHERE u.id &lt;&gt; #{viewerId}
       AND (lower(u.username) LIKE lower(#{pattern}) ESCAPE '\'
@@ -35,7 +35,7 @@
 
   <!-- プロフィール。件数は削除済みの投稿を除いて数え、viewerId がフォロー済みかを添える。 -->
   <select id="findProfile" resultType="com.raisetimeline.entity.UserProfile">
-    SELECT u.id, u.username, u.display_name, u.bio,
+    SELECT u.id, u.username, u.display_name, u.bio, u.avatar_key,
            (SELECT COUNT(*) FROM posts p WHERE p.user_id = u.id AND p.deleted_at IS NULL)
              AS post_count,
            (SELECT COUNT(*) FROM follows f WHERE f.follower_id = u.id) AS following_count,
@@ -45,5 +45,16 @@
     FROM users u
     WHERE u.id = #{id}
   </select>
+
+
+  <!-- プロフィール更新。changeAvatar のときだけ avatar_key を更新する(null はアイコンの削除)。 -->
+  <update id="updateProfile">
+    UPDATE users
+    SET display_name = #{displayName},
+        bio = #{bio,jdbcType=VARCHAR},
+        <if test="changeAvatar">avatar_key = #{avatarKey,jdbcType=VARCHAR},</if>
+        updated_at = now()
+    WHERE id = #{id}
+  </update>
 
 </mapper>

@@ -26,6 +26,7 @@ public class AuthService {
   private final PasswordEncoder passwordEncoder;
   private final JwtService jwtService;
   private final RefreshTokenService refreshTokenService;
+  private final AvatarUrls avatarUrls;
 
   /** 存在しないユーザーでも照合に同程度の時間をかけ、応答時間でIDの有無が分からないようにする。 */
   private final String dummyHash;
@@ -34,11 +35,13 @@ public class AuthService {
       UserMapper userMapper,
       PasswordEncoder passwordEncoder,
       JwtService jwtService,
-      RefreshTokenService refreshTokenService) {
+      RefreshTokenService refreshTokenService,
+      AvatarUrls avatarUrls) {
     this.userMapper = userMapper;
     this.passwordEncoder = passwordEncoder;
     this.jwtService = jwtService;
     this.refreshTokenService = refreshTokenService;
+    this.avatarUrls = avatarUrls;
     this.dummyHash = passwordEncoder.encode(UUID.randomUUID().toString());
   }
 
@@ -88,14 +91,18 @@ public class AuthService {
   public UserResponse me(long userId) {
     return userMapper
         .findById(userId)
-        .map(UserResponse::from)
+        .map(this::userResponse)
         .orElseThrow(UnauthorizedException::new);
   }
 
   private AuthResult issueTokens(User user) {
     AuthResponse response =
         AuthResponse.bearer(
-            jwtService.issue(user.getId()), jwtService.expiresInSeconds(), UserResponse.from(user));
+            jwtService.issue(user.getId()), jwtService.expiresInSeconds(), userResponse(user));
     return new AuthResult(response, refreshTokenService.issue(user.getId()));
+  }
+
+  private UserResponse userResponse(User user) {
+    return UserResponse.from(user, avatarUrls.urlOf(user.getAvatarKey()));
   }
 }

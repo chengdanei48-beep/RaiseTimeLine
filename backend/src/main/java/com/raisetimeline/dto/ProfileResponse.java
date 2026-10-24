@@ -15,15 +15,15 @@ public record ProfileResponse(
     boolean followedByMe,
     boolean isMe) {
 
-  /** avatarUrl は画像機能(S3)の実装まで常に null。自分自身は followedByMe を false にする。 */
-  public static ProfileResponse of(UserProfile profile, long viewerId) {
+  /** 自分自身は followedByMe を false にする。 */
+  public static ProfileResponse of(UserProfile profile, long viewerId, String avatarUrl) {
     boolean me = profile.getId() == viewerId;
     return new ProfileResponse(
         profile.getId(),
         profile.getUsername(),
         profile.getDisplayName(),
         profile.getBio(),
-        null,
+        avatarUrl,
         profile.getPostCount(),
         profile.getFollowingCount(),
         profile.getFollowerCount(),

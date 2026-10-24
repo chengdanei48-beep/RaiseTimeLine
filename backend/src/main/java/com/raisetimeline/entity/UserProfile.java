@@ -7,6 +7,7 @@ public class UserProfile {
   private String username;
   private String displayName;
   private String bio;
+  private String avatarKey;
   private long postCount;
   private long followingCount;
   private long followerCount;
@@ -74,5 +75,13 @@ public class UserProfile {
 
   public void setFollowedByMe(boolean followedByMe) {
     this.followedByMe = followedByMe;
+  }
+
+  public String getAvatarKey() {
+    return avatarKey;
+  }
+
+  public void setAvatarKey(String avatarKey) {
+    this.avatarKey = avatarKey;
   }
 }
