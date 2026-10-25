@@ -4,6 +4,11 @@ import com.raisetimeline.dto.CommentListResponse;
 import com.raisetimeline.dto.CommentResponse;
 import com.raisetimeline.dto.CreateCommentRequest;
 import com.raisetimeline.service.CommentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "コメント", description = "投稿へのコメント(F-CMT)")
 @RestController
 @RequestMapping("/api")
 public class CommentController {
@@ -29,6 +35,8 @@ public class CommentController {
     this.commentService = commentService;
   }
 
+  @Operation(summary = "コメントを投稿", description = "本文(1〜280文字)。自分の投稿にも、他人の投稿にもできる。コメントへのコメントは不可。")
+  @ApiResponse(responseCode = "201", description = "投稿した")
   @PostMapping("/posts/{postId}/comments")
   public ResponseEntity<CommentResponse> create(
       @AuthenticationPrincipal Jwt jwt,
@@ -39,6 +47,7 @@ public class CommentController {
     return ResponseEntity.status(HttpStatus.CREATED).body(created);
   }
 
+  @Operation(summary = "コメント一覧", description = "古い順(作成日時の昇順、同時刻は ID の昇順)。削除済みは含まない。")
   @GetMapping("/posts/{postId}/comments")
   public CommentListResponse list(
       @PathVariable long postId,
@@ -47,6 +56,11 @@ public class CommentController {
     return commentService.list(postId, cursor, limit);
   }
 
+  @Operation(summary = "コメントを削除", description = "論理削除。作成者のみ。")
+  @ApiResponse(
+      responseCode = "403",
+      description = "他人のコメント",
+      content = @Content(schema = @Schema(ref = "#/components/schemas/Problem")))
   @DeleteMapping("/comments/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void delete(@AuthenticationPrincipal Jwt jwt, @PathVariable long id) {

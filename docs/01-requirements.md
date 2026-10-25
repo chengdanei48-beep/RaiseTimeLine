@@ -201,6 +201,8 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 テーブル定義・ER 図は [04-er-diagram.md](04-er-diagram.md) を正とする。テーブルは `users` / `posts` / `post_images` / `comments` / `likes` / `follows` の 6 つ。
 
 ### 7.2 API 一覧
+> **API 仕様書(OpenAPI)は、コードから自動生成している。** 項目・型・検証・エラー応答の詳細は [docs/api/openapi.yaml](api/openapi.yaml)(実際の API と一致することをテストで検証している)、実際に試すときは開発サーバーの Swagger UI(`http://localhost:8080/swagger-ui.html`。`.env` の `API_DOCS_ENABLED=true` のとき)を見る。下の表は概要。
+
 画面とバックエンドは JSON の REST API で通信する。`/api/auth/register`・`/api/auth/login`・`/api/auth/refresh`・`/api/auth/logout`・`/api/health` 以外は、ログイン(`Authorization: Bearer` ヘッダのアクセストークン)が必要。詳細は各機能定義書を参照。
 
 | メソッド | パス | 内容 | 成功時 | 機能 |
