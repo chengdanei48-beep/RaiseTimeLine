@@ -20,6 +20,7 @@
     <java.version>25</java.version>
     <mybatis-spring-boot.version>4.1.0</mybatis-spring-boot.version>
     <aws-sdk.version>2.57.3</aws-sdk.version>
+    <springdoc.version>3.2.0</springdoc.version>
     <spotless.version>2.46.1</spotless.version>
     <checkstyle.version>10.26.1</checkstyle.version>
     <spotbugs.version>4.9.8</spotbugs.version>
@@ -45,6 +46,11 @@
     <dependency>
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>s3</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <version>${springdoc.version}</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>

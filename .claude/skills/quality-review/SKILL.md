@@ -105,7 +105,7 @@ cd infra/terraform && terraform plan -input=false -out tfplan   # 要 aws sso lo
 - 画面の文言(ボタン・見出し・ヒント・必須表示)、表示形式。
 - 入力制限(ユーザーID 3〜15 文字の `[A-Za-z0-9_]`・大文字小文字を区別しない、表示名 1〜30、パスワード 8〜72 文字かつ 72 バイト以内 など、各機能定義書の検証欄)と、エラー表示の仕様。
 - 画面項目・操作(確認用パスワード、削除確認ダイアログ 等)。
-- API(パス・フィールド・ステータスコード・クエリパラメータ)と DB 定義(型・長さ・制約・値の大文字小文字)。
+- API(パス・フィールド・ステータスコード・クエリパラメータ)と DB 定義(型・長さ・制約・値の大文字小文字)。API 仕様書 `docs/api/openapi.yaml` はコードから自動生成され、`OpenApiSpecTest` が一致を検証する(API を変えたら `./mvnw test -Dtest=OpenApiSpecTest -Dopenapi.update=true` で更新)。一覧表(`01-requirements.md` 7.2)との食い違いは、仕様書を正として直す。
 - docs 同士の整合(ER 図とテーブル定義、機能一覧と機能定義書)。
 - 新機能を入れたら docs(要件・機能定義・ER図・画面設計・README)を同じ PR で更新する。
 

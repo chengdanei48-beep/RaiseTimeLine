@@ -64,7 +64,8 @@ RaiseTimeLine/
 │  ├─ features/               … 機能定義書(F-AUTH / F-TL / F-POST / F-CMT / F-LIKE / F-FOLLOW / F-SEARCH / F-PROF)
 │  ├─ 03-screens.md           … 画面設計・画面遷移図
 │  ├─ 04-er-diagram.md        … ER図・テーブル定義
-│  └─ 05-infrastructure.md    … AWS 構成図
+│  ├─ 05-infrastructure.md    … AWS 構成図
+│  └─ api/openapi.yaml        … API 仕様書(OpenAPI。コードから自動生成。テストで一致を検証)
 ├─ .claude/                   … Claude Code の設定とスキル(quality-review)
 ├─ CLAUDE.md                  … 開発ルール(Claude Code 向け)
 ├─ backend/                   … バックエンド(Spring Boot + MyBatis。SQL は src/main/resources/mapper/*.xml)
@@ -86,6 +87,8 @@ cd backend
 ```
 
 アプリは起動時にリポジトリ直下の `.env` を読みます(OS の環境変数が優先)。
+
+**API 仕様書**: `.env` の `API_DOCS_ENABLED=true`(`.env.example` に記載)で起動すると、Swagger UI(<http://localhost:8080/swagger-ui.html>)と OpenAPI(<http://localhost:8080/v3/api-docs>)が見られます。画面の「Authorize」にアクセストークンを入れると「Try it out」で実際に呼べます。本番では設定しません(公開されません)。仕様はコードから自動生成し、[docs/api/openapi.yaml](docs/api/openapi.yaml) に残してテストで一致を検証しています。API を変えたら `./mvnw test -Dtest=OpenApiSpecTest -Dopenapi.update=true` で更新します。
 
 ## フロントエンドの起動(開発)
 
