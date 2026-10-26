@@ -11,6 +11,8 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class RefreshTokenService {
 
+  private static final Logger LOG = LoggerFactory.getLogger(RefreshTokenService.class);
   private static final int TOKEN_BYTES = 32;
 
   private final RefreshTokenMapper mapper;
@@ -63,6 +66,11 @@ public class RefreshTokenService {
     if (stored.getRevokedAt() != null) {
       if (stored.getRevokedAt().plus(properties.reuseGrace()).isBefore(now)) {
         mapper.revokeAllByUser(stored.getUserId(), now);
+        // 盗難の可能性。セキュリティ監視のアラート対象
+        LOG.atWarn()
+            .addKeyValue("event", "refresh_token_reuse_detected")
+            .addKeyValue("user_id", stored.getUserId())
+            .log("失効済みリフレッシュトークンの再提示を検知(全トークンを失効)");
       }
       throw new UnauthorizedException();
     }

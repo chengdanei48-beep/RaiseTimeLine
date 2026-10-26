@@ -156,6 +156,7 @@ TaskManagement と同じ構成を想定する。
 | 対応ブラウザ | Google Chrome、Microsoft Edge の最新版(PC)。スマートフォン向けレイアウトは対象外 |
 | 言語 | 画面表示はすべて日本語 |
 | 保守性 | フロントエンドとバックエンドを分離した REST API 構成。静的解析・テストを CI で実行 |
+| 運用・監視 | ログは標準出力へ。`LOG_FORMAT=ecs` で JSON(構造化ログ)にでき、全ログに `request_id` を付け、アクセスログ・認証イベントを出す。パスワード・トークン等はログに出さない。詳細は [07-observability.md](07-observability.md) |
 
 ### 6.2 技術スタック
 TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わせる。バージョンはそちらの更新に追従して見直す。
