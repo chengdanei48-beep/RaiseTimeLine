@@ -13,6 +13,8 @@ import com.raisetimeline.repository.UserMapper;
 import com.raisetimeline.security.JwtService;
 import com.raisetimeline.security.RefreshTokenService;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional(readOnly = true)
 public class AuthService {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AuthService.class);
 
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
@@ -57,6 +61,10 @@ public class AuthService {
       // lower(username) の一意制約。同時登録の競合もここに来る
       throw new UsernameAlreadyExistsException();
     }
+    LOG.atInfo()
+        .addKeyValue("event", "user_registered")
+        .addKeyValue("user_id", user.getId())
+        .log("ユーザー登録");
     return issueTokens(user);
   }
 
@@ -66,8 +74,14 @@ public class AuthService {
     String hash = user != null ? user.getPasswordHash() : dummyHash;
     boolean matches = passwordEncoder.matches(request.password(), hash);
     if (user == null || !matches) {
+      // ユーザーIDの有無・入力値は記録しない(ID の列挙やパスワードの打ち間違いの漏えいを防ぐ)
+      LOG.atWarn().addKeyValue("event", "login_failed").log("ログイン失敗");
       throw new InvalidCredentialsException();
     }
+    LOG.atInfo()
+        .addKeyValue("event", "login_succeeded")
+        .addKeyValue("user_id", user.getId())
+        .log("ログイン成功");
     return issueTokens(user);
   }
 

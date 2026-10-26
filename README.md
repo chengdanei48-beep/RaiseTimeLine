@@ -65,6 +65,7 @@ RaiseTimeLine/
 │  ├─ 03-screens.md           … 画面設計・画面遷移図
 │  ├─ 04-er-diagram.md        … ER図・テーブル定義
 │  ├─ 05-infrastructure.md    … AWS 構成図
+│  ├─ 07-observability.md     … ログ運用・監視の設計書(構造化ログ・アラート・runbook)
 │  └─ api/openapi.yaml        … API 仕様書(OpenAPI。コードから自動生成。テストで一致を検証)
 ├─ .claude/                   … Claude Code の設定とスキル(quality-review)
 ├─ CLAUDE.md                  … 開発ルール(Claude Code 向け)
@@ -111,6 +112,7 @@ npm run lint; npm run typecheck; npm run build
 | [docs/03-screens.md](docs/03-screens.md) | 画面一覧(S-01〜S-08)・画面遷移図・ワイヤー・入力検証 |
 | [docs/04-er-diagram.md](docs/04-er-diagram.md) | ER図・テーブル定義(users / posts / post_images / comments / likes / follows)・インデックス・クエリ方針 |
 | [docs/05-infrastructure.md](docs/05-infrastructure.md) | AWS 構成図(ALB → EC2 → RDS、画像用 S3)・セキュリティグループ・費用の目安・未確定事項 |
+| [docs/07-observability.md](docs/07-observability.md) | ログ運用・監視の設計書(構造化ログ JSON・request_id・ログ規約・アラート方針・runbook・Datadog/CloudWatch の運用) |
 | [CLAUDE.md](CLAUDE.md) | 開発フロー・ポート規約などの開発ルール |
 
 ## 画面

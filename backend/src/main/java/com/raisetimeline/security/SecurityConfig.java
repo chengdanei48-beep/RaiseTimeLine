@@ -2,6 +2,7 @@ package com.raisetimeline.security;
 
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.raisetimeline.config.JwtProperties;
+import com.raisetimeline.logging.UserMdcFilter;
 import java.nio.charset.StandardCharsets;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -18,6 +19,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -58,7 +60,9 @@ public class SecurityConfig {
                     .authenticationEntryPoint(errorHandler)
                     .accessDeniedHandler(errorHandler))
         .exceptionHandling(
-            ex -> ex.authenticationEntryPoint(errorHandler).accessDeniedHandler(errorHandler));
+            ex -> ex.authenticationEntryPoint(errorHandler).accessDeniedHandler(errorHandler))
+        // 認証の直後に、ログへ user_id を付ける
+        .addFilterAfter(new UserMdcFilter(), BearerTokenAuthenticationFilter.class);
     return http.build();
   }
 
