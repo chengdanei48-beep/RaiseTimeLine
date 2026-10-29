@@ -12,4 +12,9 @@ export default defineConfig({
       '/api': 'http://localhost:8080',
     },
   },
+  // 本番ビルドの確認(性能テスト)用。開発サーバーと同じ 5173 で動かし、/api は server.proxy と同じ転送を使う
+  preview: {
+    port: 5173,
+    strictPort: true,
+  },
 })

@@ -20,3 +20,7 @@ dist/
 .DS_Store
 Thumbs.db
 *.log
+
+# 性能テスト(docs/09-performance-testing.md)。結果と生成物は Git に入れない
+perf/results/
+perf/browser/.tmp/

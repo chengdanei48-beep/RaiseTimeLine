@@ -112,6 +112,7 @@ npm run lint; npm run typecheck; npm run build
 | [docs/03-screens.md](docs/03-screens.md) | 画面一覧(S-01〜S-08)・画面遷移図・ワイヤー・入力検証 |
 | [docs/04-er-diagram.md](docs/04-er-diagram.md) | ER図・テーブル定義(users / posts / post_images / comments / likes / follows)・インデックス・クエリ方針 |
 | [docs/05-infrastructure.md](docs/05-infrastructure.md) | AWS 構成図(ALB → EC2 → RDS、画像用 S3)・セキュリティグループ・費用の目安・未確定事項 |
+| [docs/09-performance-testing.md](docs/09-performance-testing.md) | 性能テスト(手動実行。k6 の API 負荷・Playwright/Lighthouse のブラウザ計測・合格基準・後始末) |
 | [docs/07-observability.md](docs/07-observability.md) | ログ運用・監視の設計書(構造化ログ JSON・request_id・ログ規約・アラート方針・runbook・Datadog/CloudWatch の運用) |
 | [CLAUDE.md](CLAUDE.md) | 開発フロー・ポート規約などの開発ルール |
 
