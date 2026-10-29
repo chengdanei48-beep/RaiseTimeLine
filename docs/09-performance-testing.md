@@ -93,7 +93,9 @@ scripts\perf.ps1 -Target all -Rows 50000
 
 | 日付 | 条件 | 結果 |
 |---|---|---|
-| 2026-10-29 | 投稿 5,000 件・ユーザー 50 人、`combined`(read-mix 15 VU 5 分を背景に) | k6: 4,080 リクエスト、失敗 0%、全体 p95 12ms。timeline(all / following)p95 約 12.5ms。ブラウザ(通常): ログイン→タイムライン 267ms、100 件スクロール 173ms、LCP 52ms |
-| 2026-10-29 | 投稿 50,000 件・ユーザー 50 人、`all`(read-mix 15 VU 5 分 → ブラウザ → Lighthouse) | k6: 4,045 リクエスト、失敗 0%、全体 p95 14ms。timeline p95 約 14ms。ブラウザ(通常): ログイン→タイムライン 235ms、LCP 48ms。CPU 4x・Fast 4G 相当: 同 931ms、LCP 736ms。100 件表示後 JS ヒープ約 8.6MB・DOM 3,055 ノード。Lighthouse: timeline 性能 0.98(LCP 1.06s、TBT 0)、ログイン画面 0.95 |
+| 2026-10-29 | 投稿 5,000 件・ユーザー 50 人、`combined`(read-mix 15 VU 5 分を背景に) | k6: 4,024 リクエスト、失敗 0%、全体 p95 12.9ms。timeline(all / following)p95 約 13ms。ブラウザ: ログイン→タイムライン 260ms、100 件スクロール 151ms、タイムラインまでの LCP 108ms |
+| 2026-10-29 | 投稿 50,000 件・ユーザー 50 人、`all`(read-mix 15 VU 5 分 → ブラウザ → Lighthouse) | k6: 4,045 リクエスト、失敗 0%、全体 p95 13.7ms。timeline p95 約 14ms。ブラウザ(通常): ログイン→タイムライン 235ms、LCP 116ms。CPU 4x・Fast 4G 相当: 同 931ms、LCP 1,268ms。100 件表示後 JS ヒープ約 8.6MB・DOM 3,055 ノード。Lighthouse: timeline 性能 0.98(LCP 1.06s、TBT 0)、ログイン画面 0.95 |
+
+内訳と限界は [初回レポート](10-performance-report-initial.md) を参照。
 
 所見: 学習規模(数千件)とその 10 倍(5 万件)で、どちらも基準に対して大きな余裕がある。件数が 10 倍でも p95 はほぼ変わらず、現状のインデックスとクエリ構成(カーソル方式)が効いている。ユーザー数・同時接続数を増やした `stress` は未実施。
