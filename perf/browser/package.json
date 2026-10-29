@@ -1,0 +1,16 @@
+{
+  "name": "raisetimeline-perf-browser",
+  "private": true,
+  "type": "module",
+  "description": "ブラウザ実行の性能計測(手動実行専用。frontend の依存には含めない)",
+  "scripts": {
+    "measure": "node measure.mjs",
+    "lighthouse": "node lighthouse.mjs",
+    "check": "node --check measure.mjs && node --check lighthouse.mjs"
+  },
+  "dependencies": {
+    "chrome-launcher": "1.2.2",
+    "lighthouse": "13.6.0",
+    "playwright": "1.64.1"
+  }
+}

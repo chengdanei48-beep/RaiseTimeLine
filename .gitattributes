@@ -1,2 +1,4 @@
 # サーバー(Linux)上で実行・読み込みされるファイルは LF のままにする
 infra/terraform/templates/* text eol=lf
+# psql のメタコマンド(\if など)が壊れないよう、性能テストのシードは常に LF
+perf/seed/*.sql text eol=lf

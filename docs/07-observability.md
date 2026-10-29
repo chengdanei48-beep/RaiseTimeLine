@@ -262,7 +262,7 @@ fields @timestamp, message, request_id, user_id
 
 | 種類 | 方針 | 状態 |
 |---|---|---|
-| メトリクス | Actuator + Micrometer。RED(件数・エラー率・レイテンシ)を取る。JVM・HikariCP は自動で取れる | 未実施(現状は health のみ公開。公開範囲を広げるときは認証・ネットワークで保護する) |
+| メトリクス | Actuator + Micrometer。RED(件数・エラー率・レイテンシ)を取る。JVM・HikariCP は自動で取れる(性能テストの調査にも使える: [09-performance-testing.md](09-performance-testing.md)) | 未実施(現状は health のみ公開。公開範囲を広げるときは認証・ネットワークで保護する) |
 | トレース | Datadog APM / OpenTelemetry。遅い SQL・N+1 の発見に使う | 未実施 |
 
 当面は、ログ(アクセスログの `duration_ms` と `http.status`)から RED の大半を代替できる。
