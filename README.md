@@ -180,7 +180,42 @@ cd frontend && npm run typecheck # 型チェック
 cd frontend && npm run build     # 型チェック + ビルド
 ```
 
-同じチェックを GitHub Actions(`.github/workflows/ci.yml`)が、PR と main への push のたびに自動で実行します(`backend` / `frontend` の 2 ジョブ)。
+同じチェックを GitHub Actions(`.github/workflows/ci.yml`)が、PR と main への push のたびに自動で実行します。4 つのジョブは互いに依存せず並列に走ります。
+
+```mermaid
+flowchart LR
+    trigger([PR作成・更新 / main へのpush]) --> backend & frontend & scripts & e2e
+
+    subgraph backend["backend (mvnw verify)"]
+        direction TB
+        b1[Testcontainersで\nPostgreSQL起動] --> b2[テスト + Spotless +\nCheckstyle + SpotBugs]
+    end
+
+    subgraph frontend["frontend (lint / typecheck / build)"]
+        direction TB
+        f1[npm ci] --> f2[lint: oxlint] --> f3[typecheck: tsc] --> f4[build: vite build]
+    end
+
+    subgraph scripts["scripts (PSScriptAnalyzer)"]
+        direction TB
+        s1[scripts/ 配下へ\nInvoke-ScriptAnalyzer]
+    end
+
+    subgraph e2e["e2e (Playwright, Chromium)"]
+        direction TB
+        e1[Postgres起動 + S3Mock起動] --> e2b[backend: jarをbuildして\neプロファイルで起動]
+        e2b --> e3[frontend: buildして\nvite previewで配信]
+        e3 --> e4[e2e: typecheck →\nplaywright test]
+        e4 -.失敗時.-> e5[(Playwrightレポートを\nartifactに保存)]
+    end
+
+    backend --> done([全ジョブ成功 = マージ可])
+    frontend --> done
+    scripts --> done
+    e2e --> done
+```
+
+`e2e` ジョブの `@perf`(ブラウザ性能計測)は実時間に依存するため、既定で除外され CI では走りません([e2eテスト](docs/11-e2e-testing.md) 参照)。性能テスト(`perf/`)も同様に手動専用です([性能テスト](docs/09-performance-testing.md) 参照)。
 
 品質レビューの観点は `.claude/skills/quality-review/SKILL.md`(Claude Code のスキル `quality-review`)にまとめています。
 
