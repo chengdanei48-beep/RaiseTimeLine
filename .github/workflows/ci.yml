@@ -32,6 +32,23 @@ jobs:
       # DB は Testcontainers が起動する(ubuntu-latest には Docker が入っている)。
       - run: ./mvnw --batch-mode --no-transfer-progress verify
 
+  scripts:
+    name: scripts (PSScriptAnalyzer)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: PSScriptAnalyzer を実行する
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -ErrorAction Stop
+          $results = Invoke-ScriptAnalyzer -Path scripts -Recurse -Severity Warning, Error
+          if ($results) {
+            $results | Format-Table -AutoSize | Out-String | Write-Output
+            throw "PSScriptAnalyzer の指摘が $($results.Count) 件あります"
+          }
+          Write-Output "指摘なし"
+
   frontend:
     name: frontend (lint / typecheck / build)
     runs-on: ubuntu-latest
