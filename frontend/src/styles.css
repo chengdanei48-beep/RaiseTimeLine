@@ -5,8 +5,10 @@
   --text: #0f1419;
   --muted: #667085;
   --border: #e4e7ec;
-  --primary: #1d9bf0;
-  --primary-dark: #1a7fc4;
+  /* 文字色として使う箇所がWCAG AAのコントラスト比(通常文字4.5:1)を満たす濃さにしている(#81)。
+     白背景で5.55:1、本文背景(--bg)で5.04:1。元は #1d9bf0(白背景3.00:1・--bg背景2.73:1で不足していた) */
+  --primary: #146da8;
+  --primary-dark: #10598a;
   --danger: #e0245e;
   --like: #f91880;
   --radius: 12px;
