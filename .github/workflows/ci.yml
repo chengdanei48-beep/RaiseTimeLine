@@ -77,6 +77,10 @@ jobs:
       S3_PORT: "9000"
       S3_ENDPOINT: http://localhost:9000
       S3_BUCKET: raisetimeline-e2e
+      # S3Mock は値を検証しないが、未設定だと AWS SDK が実際の認証チェーン(IMDS 等)を
+      # 探しに行って失敗する(presign が 500 になる)。.env.example と同じダミー値を設定する
+      S3_ACCESS_KEY: dev-access-key
+      S3_SECRET_KEY: dev-secret-key
       REFRESH_COOKIE_SECURE: "false"
     steps:
       - uses: actions/checkout@v4
@@ -101,15 +105,6 @@ jobs:
             adobe/s3mock:latest
           for i in $(seq 1 20); do curl -sf http://localhost:9000/ > /dev/null && exit 0; sleep 1; done
           echo "S3Mock が起動しませんでした"; exit 1
-
-      - name: "[診断] S3Mock の CORS preflight を確認する(#80 の切り分け用、後で削除)"
-        run: |
-          echo "--- OPTIONS (PUT) raisetimeline-e2e ---"
-          curl -s -i -X OPTIONS "http://localhost:9000/raisetimeline-e2e/test.png" \
-            -H "Origin: http://localhost:5173" -H "Access-Control-Request-Method: PUT" -H "Access-Control-Request-Headers: content-type"
-          echo "--- PUT (no CORS enforcement via curl, just reachability) ---"
-          curl -s -i -X PUT "http://localhost:9000/raisetimeline-e2e/test.png" -H "Content-Type: image/png" --data-binary "abc"
-          docker logs raisetimeline-s3 --tail 50
 
       - name: バックエンドを build して起動する(e2e プロファイル)
         working-directory: backend
