@@ -102,6 +102,15 @@ jobs:
           for i in $(seq 1 20); do curl -sf http://localhost:9000/ > /dev/null && exit 0; sleep 1; done
           echo "S3Mock が起動しませんでした"; exit 1
 
+      - name: "[診断] S3Mock の CORS preflight を確認する(#80 の切り分け用、後で削除)"
+        run: |
+          echo "--- OPTIONS (PUT) raisetimeline-e2e ---"
+          curl -s -i -X OPTIONS "http://localhost:9000/raisetimeline-e2e/test.png" \
+            -H "Origin: http://localhost:5173" -H "Access-Control-Request-Method: PUT" -H "Access-Control-Request-Headers: content-type"
+          echo "--- PUT (no CORS enforcement via curl, just reachability) ---"
+          curl -s -i -X PUT "http://localhost:9000/raisetimeline-e2e/test.png" -H "Content-Type: image/png" --data-binary "abc"
+          docker logs raisetimeline-s3 --tail 50
+
       - name: バックエンドを build して起動する(e2e プロファイル)
         working-directory: backend
         run: ./mvnw --batch-mode --no-transfer-progress -DskipTests package
