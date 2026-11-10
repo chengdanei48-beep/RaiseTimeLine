@@ -2,3 +2,5 @@
 infra/terraform/templates/* text eol=lf
 # psql のメタコマンド(\if など)が壊れないよう、性能テストのシードは常に LF
 perf/seed/*.sql text eol=lf
+# シェルスクリプト(shebang・sh 実行)が壊れないよう、Git フックは常に LF
+scripts/git-hooks/* text eol=lf

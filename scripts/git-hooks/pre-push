@@ -1,0 +1,13 @@
+#!/bin/sh
+# main への直接 push を拒否する(CLAUDE.md「mainへの直接pushは禁止。必ずPR経由でマージする」)。
+# GitHub側のブランチ保護ルールでも拒否されるが、push前にローカルで早く気づけるようにする。
+# 有効にするには scripts/setup-hooks.ps1 を実行する(クローン直後に一度だけでよい)。
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main|refs/heads/master)
+      echo "ERROR: $remote_ref への直接 push は禁止です。作業ブランチを push して PR を作成してください。" >&2
+      exit 1
+      ;;
+  esac
+done
+exit 0
