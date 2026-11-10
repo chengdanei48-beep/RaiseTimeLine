@@ -9,6 +9,9 @@ X(Twitter)風のテキスト中心 SNS「RaiseTimeLine」(学習用)。インプ
 Java / Spring Boot (JDK25) + React + PostgreSQL(画像は AWS S3)。バージョンは `docs/01-requirements.md` 6.2。
 MyBatis の SQL は Mapper インターフェースのアノテーションではなく XML(`backend/src/main/resources/mapper/<Mapper名>.xml`)に書く。インターフェースは宣言のみ。
 
+## 開発環境のセットアップ(クローン直後に一度だけ)
+`scripts/setup-hooks.ps1` を実行し、このリポジトリのGitフック(`scripts/git-hooks/`)を有効にする(`core.hooksPath` を設定する)。main への直接pushを、GitHub側のブランチ保護ルールより先にローカルで拒否できるようになる。
+
 ## 開発フロー(厳守)
 
 ### 1. 作業開始前に必ずGitHub Issueを作成する
