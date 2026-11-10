@@ -24,3 +24,8 @@ Thumbs.db
 # 性能テスト(docs/09-performance-testing.md)。結果と生成物は Git に入れない
 perf/results/
 perf/browser/.tmp/
+
+# E2Eテスト(docs/11-e2e-testing.md)。レポート・trace・動画は Git に入れない
+e2e/playwright-report/
+e2e/test-results/
+e2e/.cache/

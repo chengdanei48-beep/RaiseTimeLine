@@ -114,6 +114,7 @@ npm run lint; npm run typecheck; npm run build
 | [docs/05-infrastructure.md](docs/05-infrastructure.md) | AWS 構成図(ALB → EC2 → RDS、画像用 S3)・セキュリティグループ・費用の目安・未確定事項 |
 | [docs/09-performance-testing.md](docs/09-performance-testing.md) | 性能テスト(手動実行。k6 の API 負荷・Playwright/Lighthouse のブラウザ計測・合格基準・後始末) |
 | [docs/10-performance-report-initial.md](docs/10-performance-report-initial.md) | 性能テストの初回レポート(2026-10-29。5,000 件と 50,000 件の実測、限界と次のアクション) |
+| [docs/11-e2e-testing.md](docs/11-e2e-testing.md) | E2E テスト(Playwright。シナリオ・画像(実S3Mock)・ブラウザ性能計測・CI・後始末) |
 | [docs/07-observability.md](docs/07-observability.md) | ログ運用・監視の設計書(構造化ログ JSON・request_id・ログ規約・アラート方針・runbook・Datadog/CloudWatch の運用) |
 | [CLAUDE.md](CLAUDE.md) | 開発フロー・ポート規約などの開発ルール |
 
