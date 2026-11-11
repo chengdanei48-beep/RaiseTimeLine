@@ -1,5 +1,7 @@
 # RaiseTimeLine
 
+[![CI](https://github.com/chengdanei48-beep/RaiseTimeLine/actions/workflows/ci.yml/badge.svg)](https://github.com/chengdanei48-beep/RaiseTimeLine/actions/workflows/ci.yml)
+
 X(旧Twitter)のような、テキスト中心のタイムライン型 SNS です。学習目的で、要件定義から設計・実装まで一通り作ります。ユーザー登録・ログインをして短文(と画像)を投稿し、他のユーザーの投稿に**コメント**や**いいね**ができます。ユーザーを**検索**して**フォロー**もできます。
 
 **X との違い(差別化ポイント)**
@@ -216,6 +218,8 @@ flowchart LR
 ```
 
 `e2e` ジョブの `@perf`(ブラウザ性能計測)は実時間に依存するため、既定で除外され CI では走りません([e2eテスト](docs/11-e2e-testing.md) 参照)。性能テスト(`perf/`)も同様に手動専用です([性能テスト](docs/09-performance-testing.md) 参照)。
+
+CIの成功/失敗の履歴は、上の CI バッジ(mainブランチの最新状態)から [Actions の実行一覧](https://github.com/chengdanei48-beep/RaiseTimeLine/actions/workflows/ci.yml) に遷移すればすべて見られる(GitHub側で自動的に保持される。ログは90日)。失敗時の Playwright レポート(トレース・動画)は各runのartifactとして7日間保存される。
 
 品質レビューの観点は `.claude/skills/quality-review/SKILL.md`(Claude Code のスキル `quality-review`)にまとめています。
 
