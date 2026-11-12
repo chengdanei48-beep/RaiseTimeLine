@@ -179,7 +179,7 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 | API 通信 | REST API(JSON)、ブラウザ側は標準の fetch | - | |
 | 画像ストレージ | AWS S3 | - | AWS SDK for Java v2(2.57.3)で署名付き URL を発行 |
 | 画像ストレージ(開発) | S3Mock(`adobe/s3mock`、Docker) | latest | 開発用の S3 互換サーバー(`docker compose up -d` で起動、ポート 9000)。署名の検証・有効期限の判定はしないので、本番相当の確認は AWS で行う |
-| インフラ | AWS(EC2 + RDS + ALB + S3) | リージョン `ap-northeast-1` | 構成は [05-infrastructure.md](05-infrastructure.md)。構築方法(Terraform 等)は未決 |
+| インフラ | AWS(ECS Fargate + RDS + ALB + CloudFront + S3) | リージョン `ap-northeast-1` | 構成は [05-infrastructure.md](05-infrastructure.md)。構築コードは [infra/terraform/](../infra/terraform/) |
 | ソース管理 | Git / GitHub | - | Issue → 専用ブランチ(`種別/issue番号-概要`)→ PR。master への直接 push 禁止 |
 
 **既定ポート**(TaskManagement と同じ運用): バックエンド 8080 / フロントエンド(Vite)5173 / PostgreSQL(Docker)5433。動作確認時にポートを変えない。
@@ -189,9 +189,9 @@ TaskManagement(`../TaskManagment/docs/requirements.md` 6.5)の確定値に合わ
 |---|---|---|---|
 | ユーザーIDの大文字小文字 | 区別する | **区別しない**(BR-11) | SNS では `@Alice` と `@alice` が別人になると紛らわしく、なりすましにつながるため |
 | 公開範囲 | PC 内のみ | インターネット(AWS)を想定 | 複数ユーザーが使う SNS のため |
-| ロードバランサー | 使わない(費用) | ALB を使う前提 | 利用者の指定。常時課金が発生する(05 参照) |
+| ロードバランサー | 使わない(費用) | ALB を使う前提(ECS Fargateの前段) | 利用者の指定。常時課金が発生する(05 参照) |
 | 画像 | なし | S3 | 画像投稿機能のため |
-| 認証方式 | セッション(Cookie)+ CSRF | **JWT のアクセストークン**(`Authorization: Bearer`)+ **リフレッシュトークン**(HttpOnly Cookie, DB 管理) | API の認証は状態を持たず、EC2 の複数台化でセッション共有が不要になる。アクセストークンを短命(15 分)にし、ログアウト・盗難検知はリフレッシュトークンの失効で行う(F-AUTH 6章) |
+| 認証方式 | セッション(Cookie)+ CSRF | **JWT のアクセストークン**(`Authorization: Bearer`)+ **リフレッシュトークン**(HttpOnly Cookie, DB 管理) | API の認証は状態を持たず、ECS Fargate タスクの複数化でセッション共有が不要になる。アクセストークンを短命(15 分)にし、ログアウト・盗難検知はリフレッシュトークンの失効で行う(F-AUTH 6章) |
 | データベースアクセス | Spring Data JPA | **MyBatis** | SQL を明示的に書いて学ぶため(`lower(username)` 検索や集計など) |
 
 ---
@@ -280,15 +280,14 @@ HTTP ステータスと `detail`(メッセージ)を含む JSON(RFC 9457 の Pro
 - 通知(フォローされた・いいねされた・コメントされた)
 - 鍵アカウント、ブロック、ミュート
 - `like_count` などの非正規化による高速化
-- CloudFront による画像配信、EC2 の複数台化(JWT はステートレスなので、署名鍵 `JWT_SECRET` を共有すれば足りる)
+- CloudFrontによる画像配信(現状は画像用S3へ直接アクセス)、ECS Fargateタスクの複数化(JWT はステートレスなので、署名鍵 `JWT_SECRET` を共有すれば足りる)
 
 ### 10.3 未確定事項
 | 項目 | 現状の扱い |
 |---|---|
-| AWS 上にサーバーを構築するか | 未決。構成図のみ先に作成([05-infrastructure.md](05-infrastructure.md)) |
-| EC2 の台数 | 当面 1 台。ログイン状態は JWT でサーバーに持たないため、複数台にする場合は署名鍵(`JWT_SECRET`)を全台で共有する |
-| 独自ドメインと ACM 証明書 | 未定。ALB で HTTPS 終端するには独自ドメインが必要 |
-| 構築手段 | TaskManagement と同じ Terraform + AWS CLI を想定(未決) |
+| ECS Fargate タスク数 | 当面 1 タスク。ログイン状態は JWT でサーバーに持たないため、複数化する場合は署名鍵(`JWT_SECRET`)をSSM Parameter Store経由で共有する |
+| 独自ドメインと ACM 証明書 | 未定。現状はCloudFront既定のドメイン・証明書を使う。独自ドメインが決まったらus-east-1のACM証明書をCloudFrontに追加する([05-infrastructure.md](05-infrastructure.md) 7章) |
+| 構築手段 | Terraform(`infra/terraform/`)+ AWS CLI |
 
 ---
 
