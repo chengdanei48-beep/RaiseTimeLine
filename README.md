@@ -49,14 +49,14 @@ X(旧Twitter)のような、テキスト中心のタイムライン型 SNS で�
 | 静的解析(バックエンド) | Spotless・Checkstyle・SpotBugs | 2.46.1 / 10.26.1 / 4.9.8 |
 | 実行基盤(フロントのビルド) | Node.js / npm | v24.21.0 / 11.19.0 |
 | 画像ストレージ | AWS S3(署名付き URL) | - |
-| インフラ(想定) | AWS(EC2 + RDS + ALB + S3)、東京リージョン | 構築するかは未決 |
+| インフラ | AWS(ECS Fargate + RDS + ALB + CloudFront + S3)、東京リージョン | 構築コードは [infra/terraform/](infra/terraform/) |
 | ソース管理 | Git / GitHub | Git 2.55.0(開発環境) |
 
 バージョンの一覧と補足は [要件定義書 6.2](docs/01-requirements.md) にあります。TaskManagement からの意図的な変更点(ユーザーIDの大文字小文字を区別しない、ALB を使う等)は 6.3 にまとめています。
 
 ## ディレクトリ構成
 
-現在は `docs/`・開発ルール・`backend/`・`frontend/`・`mockup/`(プロトタイプ)です。`infra/` は予定です。
+現在は `docs/`・開発ルール・`backend/`・`frontend/`・`infra/terraform/`(AWS構成)・`mockup/`(プロトタイプ)です。
 
 ```
 RaiseTimeLine/
@@ -113,7 +113,7 @@ npm run lint; npm run typecheck; npm run build
 | [docs/features/](docs/features/) | 機能定義書(入出力と検証・業務ルール・フロー・異常系・受入条件。機能ごと) |
 | [docs/03-screens.md](docs/03-screens.md) | 画面一覧(S-01〜S-08)・画面遷移図・ワイヤー・入力検証 |
 | [docs/04-er-diagram.md](docs/04-er-diagram.md) | ER図・テーブル定義(users / posts / post_images / comments / likes / follows)・インデックス・クエリ方針 |
-| [docs/05-infrastructure.md](docs/05-infrastructure.md) | AWS 構成図(ALB → EC2 → RDS、画像用 S3)・セキュリティグループ・費用の目安・未確定事項 |
+| [docs/05-infrastructure.md](docs/05-infrastructure.md) | AWS 構成図(CloudFront → S3/ALB → ECS Fargate → RDS、画像用 S3)・セキュリティグループ・費用の目安・未確定事項 |
 | [docs/09-performance-testing.md](docs/09-performance-testing.md) | 性能テスト(手動実行。k6 の API 負荷・Playwright/Lighthouse のブラウザ計測・合格基準・後始末) |
 | [docs/10-performance-report-initial.md](docs/10-performance-report-initial.md) | 性能テストの初回レポート(2026-10-29。5,000 件と 50,000 件の実測、限界と次のアクション) |
 | [docs/11-e2e-testing.md](docs/11-e2e-testing.md) | E2E テスト(Playwright。シナリオ・画像(実S3Mock)・ブラウザ性能計測・CI・後始末) |
@@ -253,16 +253,17 @@ CIの成功/失敗の履歴は、上の CI バッジ(mainブランチの最新�
 
 ## インフラ(AWS)
 
-**AWS 上にサーバーを構築するかは未決**ですが、前提とする構成を先に [構成図](docs/05-infrastructure.md) にしています。
+EC2 を使わず、フロントエンドは S3 + CloudFront、バックエンドは ECS Fargate で構築します。構成図は [docs/05-infrastructure.md](docs/05-infrastructure.md)、構築コードは [infra/terraform/](infra/terraform/) を参照してください。
 
 ```
-ブラウザ ─HTTPS→ ALB ─8080→ EC2(Spring Boot + React 同梱) ─5432(SSL)→ RDS PostgreSQL 17
+ブラウザ ─HTTPS→ CloudFront ─(S3)→ フロントエンド(React静的ファイル)
+                      └─/api/*(HTTP)→ ALB ─8080→ ECS Fargate(Spring Boot) ─5432→ RDS PostgreSQL 17
    └──署名付きURLで画像を直接 PUT/GET──→ S3(非公開バケット)
 ```
 
-- ALB で HTTPS を終端するには、独自ドメインと ACM 証明書が必要です(未定)。
-- ALB は常時課金です(全体で月 $60 前後の目安)。使わない間は消す運用を想定します。
-- EC2 を複数台にする場合は、JWT の署名鍵(`JWT_SECRET`)を全台で共有します。
+- 独自ドメインが未定のため、現状は CloudFront 既定のドメイン・証明書を使う。独自ドメインが決まったら us-east-1 の ACM 証明書を追加する。
+- ALB は常時課金です(全体で月 $55〜65 前後の目安)。使わない間は ECS サービスの `desired_count` を 0 にするか、`terraform destroy` で消す運用を想定します。
+- ECS Fargate タスクを複数にする場合は、JWT の署名鍵(`JWT_SECRET`)を SSM Parameter Store 経由で共有します。
 
 ## 開発の進め方
 
