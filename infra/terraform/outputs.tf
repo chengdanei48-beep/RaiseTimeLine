@@ -52,3 +52,13 @@ output "cloudfront_distribution_id" {
   description = "CloudFrontのディストリビューションID(デプロイ後のキャッシュ無効化に使う)"
   value       = aws_cloudfront_distribution.main.id
 }
+
+output "ecs_task_family" {
+  description = "ECSタスク定義のfamily名(デプロイ時に新リビジョンを登録する対象)"
+  value       = aws_ecs_task_definition.backend.family
+}
+
+output "deploy_role_arn" {
+  description = "GitHub ActionsがAssumeするデプロイ用IAMロールのARN(.github/workflows/deploy.yml 用)"
+  value       = aws_iam_role.deploy.arn
+}

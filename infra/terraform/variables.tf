@@ -75,6 +75,12 @@ variable "desired_count" {
   default     = 1
 }
 
+variable "github_repository" {
+  description = "GitHub Actions のOIDC連携で許可するリポジトリ(owner/repo形式)。このリポジトリのmainブランチのワークフローのみデプロイロールをAssumeできる"
+  type        = string
+  default     = "chengdanei48-beep/RaiseTimeLine"
+}
+
 variable "cloudfront_price_class" {
   description = "CloudFrontの配信クラス。学習用は北米・欧州・アジア中心のPriceClass_200で十分"
   type        = string
