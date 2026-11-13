@@ -114,6 +114,7 @@ npm run lint; npm run typecheck; npm run build
 | [docs/03-screens.md](docs/03-screens.md) | 画面一覧(S-01〜S-08)・画面遷移図・ワイヤー・入力検証 |
 | [docs/04-er-diagram.md](docs/04-er-diagram.md) | ER図・テーブル定義(users / posts / post_images / comments / likes / follows)・インデックス・クエリ方針 |
 | [docs/05-infrastructure.md](docs/05-infrastructure.md) | AWS 構成図(CloudFront → S3/ALB → ECS Fargate → RDS、画像用 S3)・セキュリティグループ・費用の目安・未確定事項 |
+| [docs/06-deploy.md](docs/06-deploy.md) | デプロイ手順(GitHub ActionsによるCI/CD。初回セットアップ・GitHub Variables・ECS Exec・止め方) |
 | [docs/09-performance-testing.md](docs/09-performance-testing.md) | 性能テスト(手動実行。k6 の API 負荷・Playwright/Lighthouse のブラウザ計測・合格基準・後始末) |
 | [docs/10-performance-report-initial.md](docs/10-performance-report-initial.md) | 性能テストの初回レポート(2026-10-29。5,000 件と 50,000 件の実測、限界と次のアクション) |
 | [docs/11-e2e-testing.md](docs/11-e2e-testing.md) | E2E テスト(Playwright。シナリオ・画像(実S3Mock)・ブラウザ性能計測・CI・後始末) |
@@ -253,7 +254,7 @@ CIの成功/失敗の履歴は、上の CI バッジ(mainブランチの最新�
 
 ## インフラ(AWS)
 
-EC2 を使わず、フロントエンドは S3 + CloudFront、バックエンドは ECS Fargate で構築します。構成図は [docs/05-infrastructure.md](docs/05-infrastructure.md)、構築コードは [infra/terraform/](infra/terraform/) を参照してください。
+EC2 を使わず、フロントエンドは S3 + CloudFront、バックエンドは ECS Fargate で構築します。構成図は [docs/05-infrastructure.md](docs/05-infrastructure.md)、構築コードは [infra/terraform/](infra/terraform/)、デプロイは GitHub Actions(OIDC連携)で自動化しています([docs/06-deploy.md](docs/06-deploy.md))。
 
 ```
 ブラウザ ─HTTPS→ CloudFront ─(S3)→ フロントエンド(React静的ファイル)

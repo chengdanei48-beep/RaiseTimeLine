@@ -148,7 +148,7 @@ ALB は**常時課金**。使わない間はECSサービスの `desired_count` �
 | RDS のバックアップ・Multi-AZ | なし(学習用) | 削除するとデータは消える。残したいデータが出たら有効化を検討 |
 | CloudFront→画像配信への適用 | なし | 画像用S3への署名付きURLアクセスをCloudFront経由にする拡張候補(現状はS3へ直接アクセス) |
 | WAF | なし | 公開範囲を広げる場合に検討 |
-| CI/CDでのビルド・デプロイ | 未実装 | バックエンドのコンテナビルド→ECR push→ECSサービス更新、フロントエンドのビルド→S3 sync→CloudFrontキャッシュ無効化は別Issueで扱う |
+| CI/CDでのビルド・デプロイ | 実装済み | GitHub Actions(`.github/workflows/deploy.yml`)でOIDC連携により自動化。手順は [06-deploy.md](06-deploy.md) |
 
 ## 8. TaskManagement との構成の違い
 | 項目 | TaskManagement | RaiseTimeLine(本構成) |
@@ -160,3 +160,4 @@ ALB は**常時課金**。使わない間はECSサービスの `desired_count` �
 | サブネット | デフォルト VPC | デフォルト VPC(同方針) |
 | S3 | jar の受け渡し用 | **フロントエンド用バケット**・**画像用バケット**(いずれも非公開) |
 | 台数 | 1 台(セッションがメモリのため) | 当面 1 タスク(JWT のため、複数化は鍵の共有のみで可能) |
+| デプロイ | 手動(PowerShellスクリプト) | **GitHub Actions(OIDC連携)で自動化**(06章) |
