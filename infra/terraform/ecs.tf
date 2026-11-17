@@ -89,6 +89,10 @@ resource "aws_ecs_service" "backend" {
     container_port   = 8080
   }
 
+  # Spring Bootの起動(Flywayマイグレーション含む)に60秒前後かかるため、
+  # ALBのヘルスチェックで起動中のタスクが強制終了されないよう猶予期間を設ける
+  health_check_grace_period_seconds = 120
+
   depends_on = [aws_lb_listener.http]
 
   tags = {
