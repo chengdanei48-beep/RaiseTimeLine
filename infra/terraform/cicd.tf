@@ -11,7 +11,14 @@ resource "aws_iam_openid_connect_provider" "github_actions" {
   thumbprint_list = [data.tls_certificate.github_actions.certificates[0].sha1_fingerprint]
 }
 
-# main ブランチへの push(ワークフロー内のジョブ)からのみ Assume できるようにする
+# main ブランチへの push(ワークフロー内のジョブ)からのみ Assume できるようにする。
+# GitHubはsubクレームのowner/repo名の後ろに不変ID(@数字)を付加することがあるため、
+# ワイルドカードでID付き・なしの両方の形式に対応する。
+locals {
+  github_owner = split("/", var.github_repository)[0]
+  github_repo  = split("/", var.github_repository)[1]
+}
+
 data "aws_iam_policy_document" "github_actions_assume" {
   statement {
     actions = ["sts:AssumeRoleWithWebIdentity"]
@@ -30,7 +37,7 @@ data "aws_iam_policy_document" "github_actions_assume" {
     condition {
       test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/main"]
+      values   = ["repo:${local.github_owner}*/${local.github_repo}*:ref:refs/heads/main"]
     }
   }
 }
